@@ -1,0 +1,6 @@
+{
+  "name": "Zentrix Backend",
+  "description": "Self-hosted Cloud Console & BaaS like Firebase & Supabase for Zentrix apps with Auth, Vault secrets, Database, and SDK Keys.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
