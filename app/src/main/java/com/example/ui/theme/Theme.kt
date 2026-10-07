@@ -1,41 +1,41 @@
 package com.example.ui.theme
 
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.lightColorScheme
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-private val FirebaseLightColorScheme = lightColorScheme(
-    primary = ButtonBlue,
-    onPrimary = Color.White,
-    primaryContainer = Color(0xFFE8F0FE),
-    onPrimaryContainer = ButtonBlue,
-    secondary = ButtonYellow,
-    onSecondary = Color(0xFF202124),
-    secondaryContainer = Color(0xFFFEF7E0),
-    onSecondaryContainer = Color(0xFF5F6368),
-    tertiary = ButtonGreen,
-    onTertiary = Color.White,
-    tertiaryContainer = Color(0xFFE6F4EA),
-    onTertiaryContainer = ButtonGreen,
-    background = FirebaseBackground,
+private val ZentrixDarkColorScheme = darkColorScheme(
+    primary = ZentrixCyan,
+    onPrimary = Color(0xFF090D16),
+    primaryContainer = Color(0xFF0E2A3B),
+    onPrimaryContainer = ZentrixCyan,
+    secondary = ZentrixViolet,
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFF261E42),
+    onSecondaryContainer = ZentrixViolet,
+    tertiary = ZentrixGreen,
+    onTertiary = Color.Black,
+    tertiaryContainer = Color(0xFF103324),
+    onTertiaryContainer = ZentrixGreen,
+    background = ZentrixBackground,
     onBackground = TextPrimary,
-    surface = FirebaseSurface,
+    surface = ZentrixSurface,
     onSurface = TextPrimary,
-    surfaceVariant = FirebaseSurfaceVariant,
+    surfaceVariant = ZentrixSurfaceVariant,
     onSurfaceVariant = TextSecondary,
-    outline = FirebaseCardBorder,
-    outlineVariant = Color(0xFFE8EAED)
+    outline = ZentrixCardBorder,
+    outlineVariant = Color(0xFF1B283E)
 )
 
 @Composable
 fun MyApplicationTheme(
-    darkTheme: Boolean = false, // Pure crisp white Firebase theme
+    darkTheme: Boolean = true,
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     MaterialTheme(
-        colorScheme = FirebaseLightColorScheme,
+        colorScheme = ZentrixDarkColorScheme,
         typography = Typography,
         content = content
     )

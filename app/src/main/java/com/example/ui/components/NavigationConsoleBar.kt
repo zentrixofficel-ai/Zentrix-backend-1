@@ -27,8 +27,8 @@ fun NavigationConsoleBar(
     modifier: Modifier = Modifier
 ) {
     Surface(
-        color = FirebaseSurface,
-        border = androidx.compose.foundation.BorderStroke(1.dp, FirebaseCardBorder),
+        color = ZentrixSurface,
+        border = androidx.compose.foundation.BorderStroke(1.dp, ZentrixCardBorder),
         shadowElevation = 4.dp,
         modifier = modifier
             .fillMaxWidth()
@@ -47,11 +47,17 @@ fun NavigationConsoleBar(
             ConsoleTab.values().forEach { tab ->
                 val isSelected = tab == currentTab
                 val icon: ImageVector = when (tab) {
-                    ConsoleTab.PROJECTS -> Icons.Default.Settings
-                    ConsoleTab.SDK_CONNECT -> Icons.Default.Code
-                    ConsoleTab.VAULT -> Icons.Default.VpnKey
+                    ConsoleTab.OVERVIEW -> Icons.Default.Dashboard
+                    ConsoleTab.PROJECTS -> Icons.Default.Layers
                     ConsoleTab.AUTH -> Icons.Default.PeopleAlt
                     ConsoleTab.DATABASE -> Icons.Default.Storage
+                    ConsoleTab.REALTIME -> Icons.Default.WifiTethering
+                    ConsoleTab.STORAGE -> Icons.Default.CloudUpload
+                    ConsoleTab.MESSAGING -> Icons.Default.Forum
+                    ConsoleTab.NOTIFICATIONS -> Icons.Default.NotificationsActive
+                    ConsoleTab.FUNCTIONS -> Icons.Default.Terminal
+                    ConsoleTab.SDK_CONNECT -> Icons.Default.Code
+                    ConsoleTab.VAULT -> Icons.Default.VpnKey
                     ConsoleTab.SECURITY -> Icons.Default.Shield
                     ConsoleTab.DATA_EXPLORER -> Icons.Default.ManageSearch
                     ConsoleTab.ANALYTICS -> Icons.Default.Analytics
@@ -59,9 +65,9 @@ fun NavigationConsoleBar(
                 }
 
                 Surface(
-                    color = if (isSelected) Color(0xFFE8F0FE) else Color.Transparent,
+                    color = if (isSelected) ZentrixCyan.copy(alpha = 0.15f) else Color.Transparent,
                     shape = RoundedCornerShape(20.dp),
-                    border = if (isSelected) androidx.compose.foundation.BorderStroke(1.5.dp, ButtonBlue) else null,
+                    border = if (isSelected) androidx.compose.foundation.BorderStroke(1.5.dp, ZentrixCyan) else null,
                     modifier = Modifier
                         .clickable { onTabSelected(tab) }
                         .testTag("nav_tab_${tab.name.lowercase()}")
@@ -73,13 +79,13 @@ fun NavigationConsoleBar(
                         Icon(
                             imageVector = icon,
                             contentDescription = tab.title,
-                            tint = if (isSelected) ButtonBlue else TextSecondary,
+                            tint = if (isSelected) ZentrixCyan else TextSecondary,
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = tab.title,
-                            color = if (isSelected) ButtonBlue else TextPrimary,
+                            color = if (isSelected) ZentrixCyan else TextPrimary,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                             fontSize = 12.sp
                         )

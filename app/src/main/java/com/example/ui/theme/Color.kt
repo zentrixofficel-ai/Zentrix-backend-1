@@ -2,43 +2,42 @@ package com.example.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Authentic Firebase Console Light Theme (Clean White & High Contrast)
-val FirebaseBackground = Color(0xFFF8F9FA) // Google light neutral background
-val FirebaseSurface = Color(0xFFFFFFFF)    // Pure white cards & containers
-val FirebaseSurfaceVariant = Color(0xFFF1F3F4)
-val FirebaseCardBorder = Color(0xFFDADCE0) // Crisp Google/Firebase border
-val FirebaseSidebar = Color(0xFF202124)    // Charcoal navigation drawer
+// Original Zentrix Developer Console Theme (Cyber Obsidian & Neon Tech)
+val ZentrixBackground = Color(0xFF090D16)      // Deep obsidian void
+val ZentrixSurface = Color(0xFF111827)         // Primary surface container
+val ZentrixSurfaceVariant = Color(0xFF162032)  // Card background
+val ZentrixCardBorder = Color(0xFF1F2D44)      // Crisp border line
 
-// Requested Colored Buttons (Yellow, Black, Red, Blue, Green)
-val ButtonYellow = Color(0xFFFFA000) // Firebase Amber / Yellow
-val ButtonYellowHover = Color(0xFFFFB300)
-val ButtonBlack = Color(0xFF202124)  // Google / Firebase Black
-val ButtonRed = Color(0xFFEA4335)    // Google Red (Delete / Block)
-val ButtonBlue = Color(0xFF1A73E8)   // Google Firebase Primary Blue (Add / Save / Action)
-val ButtonGreen = Color(0xFF34A853)  // Google Green (Active / Unblock / Success)
+// Zentrix Neon Brand Accents
+val ZentrixCyan = Color(0xFF00E5FF)            // Primary glowing cyan
+val ZentrixViolet = Color(0xFF8B5CF6)          // Electric purple / violet
+val ZentrixIndigo = Color(0xFF6366F1)          // Tech indigo
+val ZentrixGreen = Color(0xFF10B981)           // Active / Online emerald
+val ZentrixAmber = Color(0xFFF59E0B)           // Warning / API Key amber
+val ZentrixRed = Color(0xFFEF4444)             // Critical / Delete crimson
 
-// Classic Firebase brand colors
-val FirebaseFlameYellow = Color(0xFFFFCA28)
-val FirebaseFlameAmber = Color(0xFFFFA000)
-val FirebaseFlameRed = Color(0xFFF57C00)
+// High-Contrast High-Tech Text Colors
+val TextPrimary = Color(0xFFF8FAFC)            // Crisp white-slate text
+val TextSecondary = Color(0xFF94A3B8)          // Subtle slate gray
+val TextMuted = Color(0xFF64748B)              // Darker metadata text
+val CodeBackground = Color(0xFF070A10)         // Ultra dark terminal background
+val CodeText = Color(0xFF38BDF8)               // Terminal syntax highlight
 
-// Text Colors on White Surface
-val TextPrimary = Color(0xFF202124)   // High-contrast Google text
-val TextSecondary = Color(0xFF5F6368) // Subtitle / description gray
-val TextMuted = Color(0xFF80868B)     // Helper text gray
-val CodeBackground = Color(0xFF202634) // High-contrast dark container for code blocks
-val CodeText = Color(0xFFF8FAFC)
+// Functional Action Buttons
+val ButtonBlue = ZentrixCyan
+val ButtonYellow = ZentrixAmber
+val ButtonBlack = Color(0xFF1E293B)
+val ButtonRed = ZentrixRed
+val ButtonGreen = ZentrixGreen
 
 // Compatibility aliases
-val ConsoleBackground = FirebaseBackground
-val ConsoleSurface = FirebaseSurface
-val ConsoleSurfaceVariant = FirebaseSurfaceVariant
-val ConsoleCardBorder = FirebaseCardBorder
-val ZentrixCyan = ButtonBlue
-val ZentrixPurple = ButtonBlack
-val ZentrixViolet = ButtonBlack
-val ZentrixIndigo = ButtonBlue
-val ZentrixGreen = ButtonGreen
-val ZentrixAmber = ButtonYellow
-val ZentrixRed = ButtonRed
-val ZentrixBlue = ButtonBlue
+val FirebaseBackground = ZentrixBackground
+val FirebaseSurface = ZentrixSurface
+val FirebaseSurfaceVariant = ZentrixSurfaceVariant
+val FirebaseCardBorder = ZentrixCardBorder
+val ConsoleBackground = ZentrixBackground
+val ConsoleSurface = ZentrixSurface
+val ConsoleSurfaceVariant = ZentrixSurfaceVariant
+val ConsoleCardBorder = ZentrixCardBorder
+val ZentrixPurple = ZentrixViolet
+val ZentrixBlue = ZentrixCyan

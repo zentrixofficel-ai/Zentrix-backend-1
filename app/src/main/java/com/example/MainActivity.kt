@@ -67,9 +67,9 @@ fun ZentrixConsoleApp(viewModel: ZentrixViewModel) {
         }
     }
 
-    // Handle back button: return to PROJECTS tab if currently on secondary tab
-    BackHandler(enabled = currentTab != ConsoleTab.PROJECTS) {
-        viewModel.setTab(ConsoleTab.PROJECTS)
+    // Handle back button: return to OVERVIEW tab if currently on secondary tab
+    BackHandler(enabled = currentTab != ConsoleTab.OVERVIEW) {
+        viewModel.setTab(ConsoleTab.OVERVIEW)
     }
 
     Scaffold(
@@ -99,6 +99,19 @@ fun ZentrixConsoleApp(viewModel: ZentrixViewModel) {
                 .padding(innerPadding)
         ) {
             when (currentTab) {
+                ConsoleTab.OVERVIEW -> {
+                    OverviewDashboardView(
+                        activeProject = activeProject,
+                        totalProjectsCount = allProjects.size,
+                        totalUsersCount = allGlobalUsers.size,
+                        totalDocsCount = allDocumentsAcrossProjects.size,
+                        totalSecretsCount = allGlobalSecrets.size,
+                        onNavigateTab = { viewModel.setTab(it) },
+                        onCreateProjectClick = { viewModel.showCreateProjectDialog.value = true },
+                        onShowToast = { viewModel.showToast(it) }
+                    )
+                }
+
                 ConsoleTab.PROJECTS -> {
                     ProjectsView(
                         projects = allProjects,
@@ -108,6 +121,41 @@ fun ZentrixConsoleApp(viewModel: ZentrixViewModel) {
                         onCreateProjectClick = { viewModel.showCreateProjectDialog.value = true },
                         onEditProjectClick = { viewModel.projectToEdit.value = it },
                         onDeleteProject = { viewModel.deleteProject(it) }
+                    )
+                }
+
+                ConsoleTab.REALTIME -> {
+                    RealtimeHubView(
+                        project = activeProject,
+                        onShowToast = { viewModel.showToast(it) }
+                    )
+                }
+
+                ConsoleTab.STORAGE -> {
+                    StorageBucketsView(
+                        activeProjectId = activeProject?.id ?: "",
+                        onShowToast = { viewModel.showToast(it) }
+                    )
+                }
+
+                ConsoleTab.MESSAGING -> {
+                    MessagingCenterView(
+                        activeProjectId = activeProject?.id ?: "",
+                        onShowToast = { viewModel.showToast(it) }
+                    )
+                }
+
+                ConsoleTab.NOTIFICATIONS -> {
+                    PushCampaignsView(
+                        activeProjectId = activeProject?.id ?: "",
+                        onShowToast = { viewModel.showToast(it) }
+                    )
+                }
+
+                ConsoleTab.FUNCTIONS -> {
+                    CloudFunctionsView(
+                        activeProjectId = activeProject?.id ?: "",
+                        onShowToast = { viewModel.showToast(it) }
                     )
                 }
 

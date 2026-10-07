@@ -15,15 +15,26 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 enum class ConsoleTab(val title: String, val subtitle: String) {
+    OVERVIEW("Overview", "System Vitals"),
     PROJECTS("Projects", "Manage Apps"),
-    SDK_CONNECT("SDK & Keys", "Code Snippets"),
-    VAULT("Secret Vault", "API Keys & Gateways"),
     AUTH("Auth & Users", "Accounts & Access"),
     DATABASE("Database", "Collections & Tables"),
+    REALTIME("Realtime", "WebSocket & Presence"),
+    STORAGE("Storage", "Buckets & Assets"),
+    MESSAGING("Messaging", "Chat & Channels"),
+    NOTIFICATIONS("Push Notifs", "Campaigns & Topics"),
+    FUNCTIONS("Functions", "Triggers & Cron"),
+    SDK_CONNECT("SDK & Keys", "Code Snippets"),
+    VAULT("Secret Vault", "API Keys & Gateways"),
     SECURITY("Security Rules", "Zero-Trust Policies"),
     DATA_EXPLORER("Data Explorer", "All Saved Records"),
     ANALYTICS("Logs & Metrics", "Audit Trail"),
-    SETTINGS("Console Settings", "Database & Reset")
+    SETTINGS("Console Settings", "Database & Reset");
+
+    companion object {
+        val SDK_DOCS = SDK_CONNECT
+        val GATEWAY_SECRETS = VAULT
+    }
 }
 
 data class RuleSimulationResult(

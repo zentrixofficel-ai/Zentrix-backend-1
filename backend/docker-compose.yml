@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  zentrix-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: zentrix_backend
+    ports:
+      - "8080:8080"
+    environment:
+      - ZENTRIX_ENV=production
+      - ZENTRIX_PORT=8080
+      - ZENTRIX_JWT_SECRET=zx_prod_sec_cluster_9872134
+    volumes:
+      - zentrix_data:/app/data
+
+volumes:
+  zentrix_data:
