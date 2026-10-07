@@ -1,7 +1,6 @@
 package com.example
 
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -42,9 +41,12 @@ fun ZentrixConsoleApp(viewModel: ZentrixViewModel) {
     val allProjects by viewModel.allProjects.collectAsStateWithLifecycle()
     val activeProject by viewModel.activeProject.collectAsStateWithLifecycle()
     val secrets by viewModel.vaultSecrets.collectAsStateWithLifecycle()
+    val allGlobalSecrets by viewModel.allGlobalSecrets.collectAsStateWithLifecycle()
     val revealedSecrets by viewModel.revealedSecrets.collectAsStateWithLifecycle()
     val authUsers by viewModel.authUsers.collectAsStateWithLifecycle()
+    val allGlobalUsers by viewModel.allGlobalUsers.collectAsStateWithLifecycle()
     val documents by viewModel.documentsForSelectedProject.collectAsStateWithLifecycle()
+    val allDocumentsAcrossProjects by viewModel.allDocumentsAcrossProjects.collectAsStateWithLifecycle()
     val selectedCollection by viewModel.selectedCollection.collectAsStateWithLifecycle()
     val auditLogs by viewModel.auditLogs.collectAsStateWithLifecycle()
     val toastMessage by viewModel.toastMessage.collectAsStateWithLifecycle()
@@ -64,7 +66,7 @@ fun ZentrixConsoleApp(viewModel: ZentrixViewModel) {
         }
     }
 
-    // Handle back button: return to PROJECTS tab if currently on sub-tab
+    // Handle back button: return to PROJECTS tab if currently on secondary tab
     BackHandler(enabled = currentTab != ConsoleTab.PROJECTS) {
         viewModel.setTab(ConsoleTab.PROJECTS)
     }
@@ -99,7 +101,7 @@ fun ZentrixConsoleApp(viewModel: ZentrixViewModel) {
                 ConsoleTab.PROJECTS -> {
                     ProjectsView(
                         projects = allProjects,
-                        activeProjectId = activeProject?.id ?: "zentrix-esport",
+                        activeProjectId = activeProject?.id ?: "",
                         onSelectProject = { viewModel.selectProject(it) },
                         onNavigateTab = { viewModel.setTab(it) },
                         onCreateProjectClick = { viewModel.showCreateProjectDialog.value = true },
@@ -118,7 +120,7 @@ fun ZentrixConsoleApp(viewModel: ZentrixViewModel) {
                 ConsoleTab.VAULT -> {
                     SecretVaultView(
                         secrets = secrets,
-                        activeProjectId = activeProject?.id ?: "zentrix-esport",
+                        activeProjectId = activeProject?.id ?: "",
                         revealedMap = revealedSecrets,
                         onToggleVisibility = { viewModel.toggleSecretVisibility(it) },
                         onAddSecretClick = { viewModel.showAddSecretDialog.value = true },
@@ -130,10 +132,13 @@ fun ZentrixConsoleApp(viewModel: ZentrixViewModel) {
                 ConsoleTab.AUTH -> {
                     UsersAuthView(
                         users = authUsers,
-                        activeProjectId = activeProject?.id ?: "zentrix-esport",
+                        activeProjectId = activeProject?.id ?: "",
                         onAddUserClick = { viewModel.showAddUserDialog.value = true },
                         onUpdateRole = { uid, role -> viewModel.updateUserRole(uid, role) },
                         onToggleBan = { viewModel.toggleUserBan(it) },
+                        onBulkBlock = { viewModel.bulkBlockUsers(it) },
+                        onBulkUnblock = { viewModel.bulkUnblockUsers(it) },
+                        onBulkDelete = { viewModel.bulkDeleteUsers(it) },
                         onDeleteUser = { viewModel.deleteUser(it) },
                         onShowToast = { viewModel.showToast(it) }
                     )
@@ -142,7 +147,7 @@ fun ZentrixConsoleApp(viewModel: ZentrixViewModel) {
                 ConsoleTab.DATABASE -> {
                     DatabaseView(
                         documents = documents,
-                        activeProjectId = activeProject?.id ?: "zentrix-esport",
+                        activeProjectId = activeProject?.id ?: "",
                         selectedCollection = selectedCollection,
                         onSelectCollection = { viewModel.selectCollection(it) },
                         onAddDocumentClick = { viewModel.showAddDocDialog.value = true },
@@ -160,10 +165,33 @@ fun ZentrixConsoleApp(viewModel: ZentrixViewModel) {
                     )
                 }
 
+                ConsoleTab.DATA_EXPLORER -> {
+                    DataExplorerView(
+                        projects = allProjects,
+                        secrets = allGlobalSecrets,
+                        users = allGlobalUsers,
+                        documents = allDocumentsAcrossProjects,
+                        logs = auditLogs,
+                        onShowToast = { viewModel.showToast(it) }
+                    )
+                }
+
                 ConsoleTab.ANALYTICS -> {
                     AnalyticsLogsView(
                         logs = auditLogs,
-                        activeProjectId = activeProject?.id ?: "zentrix-esport",
+                        activeProjectId = activeProject?.id ?: "",
+                        onShowToast = { viewModel.showToast(it) }
+                    )
+                }
+
+                ConsoleTab.SETTINGS -> {
+                    ConsoleSettingsView(
+                        totalProjectsCount = allProjects.size,
+                        totalSecretsCount = allGlobalSecrets.size,
+                        totalUsersCount = allGlobalUsers.size,
+                        totalDocsCount = allDocumentsAcrossProjects.size,
+                        onClearAllData = { viewModel.clearAllData() },
+                        onLoadStarterTemplates = { viewModel.loadStarterTemplates() },
                         onShowToast = { viewModel.showToast(it) }
                     )
                 }
@@ -175,15 +203,15 @@ fun ZentrixConsoleApp(viewModel: ZentrixViewModel) {
     if (showCreateProjectDialog) {
         CreateProjectDialog(
             onDismiss = { viewModel.showCreateProjectDialog.value = false },
-            onCreate = { name, bnName, desc, cat, status, env ->
-                viewModel.createProject(name, bnName, desc, cat, status, env)
+            onCreate = { name, appName, packageName, versionName, desc, cat, status, env ->
+                viewModel.createProject(name, appName, packageName, versionName, desc, cat, status, env)
             }
         )
     }
 
     if (showAddSecretDialog) {
         AddSecretDialog(
-            activeProjectId = activeProject?.id ?: "zentrix-esport",
+            activeProjectId = activeProject?.id ?: "",
             onDismiss = { viewModel.showAddSecretDialog.value = false },
             onAdd = { key, value, cat, desc, isGlobal ->
                 viewModel.addSecret(key, value, cat, desc, isGlobal)
@@ -193,17 +221,17 @@ fun ZentrixConsoleApp(viewModel: ZentrixViewModel) {
 
     if (showAddUserDialog) {
         AddUserDialog(
-            activeProjectId = activeProject?.id ?: "zentrix-esport",
+            activeProjectId = activeProject?.id ?: "",
             onDismiss = { viewModel.showAddUserDialog.value = false },
-            onAdd = { email, name, role, provider ->
-                viewModel.addUser(email, name, role, provider)
+            onAdd = { email, phone, name, role, provider ->
+                viewModel.addUser(email, phone, name, role, provider)
             }
         )
     }
 
     if (showAddDocDialog) {
         AddDocumentDialog(
-            activeProjectId = activeProject?.id ?: "zentrix-esport",
+            activeProjectId = activeProject?.id ?: "",
             initialCollection = selectedCollection,
             onDismiss = { viewModel.showAddDocDialog.value = false },
             onAdd = { col, title, json ->

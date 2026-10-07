@@ -1,7 +1,6 @@
 package com.example.ui.views
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -14,9 +13,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -71,16 +70,16 @@ fun ProjectsView(
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Zentrix Multi-Project Cluster",
+                            text = "Zentrix Multi-App Hub",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = TextPrimary
                         )
                         Text(
-                            text = "ফায়ারবেস ও সুপাবেসের মতো আপনার সকল নিজস্ব অ্যাপ্লিকেশনের সেন্ট্রাল ব্যাকএন্ড কন্ট্রোল।",
+                            text = "Centralized backend management cluster for your Android applications",
                             style = MaterialTheme.typography.bodySmall,
                             color = TextSecondary,
-                            lineHeight = 16.sp
+                            fontSize = 11.sp
                         )
                     }
                 }
@@ -95,7 +94,7 @@ fun ProjectsView(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "মোট এক্টিভ প্রজেক্ট: ${projects.size} টি",
+                        text = "Active Apps: ${projects.size}",
                         color = ZentrixCyan,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold
@@ -109,7 +108,54 @@ fun ProjectsView(
                     ) {
                         Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("নতুন প্রজেক্ট বানান", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Text("Add New App", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+
+        // Empty state when zero demo data exists
+        if (projects.isEmpty()) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 40.dp, horizontal = 16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Apps,
+                            contentDescription = null,
+                            tint = ZentrixCyan,
+                            modifier = Modifier.size(54.dp)
+                        )
+                        Text(
+                            text = "No Applications Registered Yet",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary
+                        )
+                        Text(
+                            text = "Zero demo data mode is active. Tap below to register your real application with App Name and Package Name.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary,
+                            modifier = Modifier.padding(horizontal = 20.dp),
+                            lineHeight = 16.sp
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Button(
+                            onClick = onCreateProjectClick,
+                            colors = ButtonDefaults.buttonColors(containerColor = ZentrixCyan, contentColor = ConsoleBackground),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Register Your First App", fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
             }
@@ -127,23 +173,12 @@ fun ProjectsView(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    val statusColor = when {
-                        project.publishStatus.contains("Live") -> ZentrixGreen
-                        project.publishStatus.contains("Direct APK") -> ZentrixAmber
-                        project.publishStatus.contains("2027") -> ZentrixPurple
-                        else -> ZentrixBlue
-                    }
-
                     StatusBadge(
                         text = project.category,
                         color = ZentrixCyan
                     )
 
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        StatusBadge(
-                            text = project.publishStatus,
-                            color = statusColor
-                        )
                         StatusBadge(
                             text = project.environment,
                             color = if (project.environment == "Production") ZentrixGreen else ZentrixAmber
@@ -153,7 +188,7 @@ fun ProjectsView(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Project Title & Bengali Name
+                // App Name & Package Name
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.Top,
@@ -161,16 +196,18 @@ fun ProjectsView(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = project.name,
+                            text = project.appName,
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = if (isSelected) ZentrixCyan else TextPrimary
                         )
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = project.bnName,
+                            text = "Package: ${project.packageName}",
+                            fontFamily = FontFamily.Monospace,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = TextSecondary,
-                            fontWeight = FontWeight.Medium
+                            color = ZentrixCyan,
+                            fontWeight = FontWeight.SemiBold
                         )
                     }
 
@@ -190,17 +227,20 @@ fun ProjectsView(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = project.description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary,
-                    lineHeight = 16.sp
-                )
+                if (project.description.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = project.description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextSecondary,
+                        fontSize = 12.sp,
+                        lineHeight = 16.sp
+                    )
+                }
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-                // Stats strip: Active Users & Daily API Hits
+                // Metadata Details Strip
                 Surface(
                     color = ConsoleSurfaceVariant,
                     shape = RoundedCornerShape(10.dp),
@@ -214,9 +254,9 @@ fun ProjectsView(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(text = "সক্রিয় ইউজার", color = TextMuted, fontSize = 10.sp)
+                            Text(text = "Version", color = TextMuted, fontSize = 10.sp)
                             Text(
-                                text = "${project.activeUsersCount} জন",
+                                text = "v${project.versionName}",
                                 color = TextPrimary,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 12.sp
@@ -227,12 +267,13 @@ fun ProjectsView(
                             color = ConsoleCardBorder
                         )
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(text = "আজকের রিকোয়েস্ট", color = TextMuted, fontSize = 10.sp)
+                            Text(text = "Project ID", color = TextMuted, fontSize = 10.sp)
                             Text(
-                                text = "${project.apiRequestsToday} Hits",
+                                text = project.id,
+                                fontFamily = FontFamily.Monospace,
                                 color = ZentrixCyan,
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp
+                                fontSize = 11.sp
                             )
                         }
                         VerticalDivider(
@@ -240,9 +281,9 @@ fun ProjectsView(
                             color = ConsoleCardBorder
                         )
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(text = "প্রজেক্ট ID", color = TextMuted, fontSize = 10.sp)
+                            Text(text = "Status", color = TextMuted, fontSize = 10.sp)
                             Text(
-                                text = project.id,
+                                text = project.publishStatus,
                                 color = TextSecondary,
                                 fontWeight = FontWeight.SemiBold,
                                 fontSize = 11.sp
@@ -265,7 +306,7 @@ fun ProjectsView(
                         },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = ZentrixCyan,
-                            contentColor = Color(0xFF041E28)
+                            contentColor = ConsoleBackground
                         ),
                         shape = RoundedCornerShape(10.dp),
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
@@ -291,7 +332,7 @@ fun ProjectsView(
                     ) {
                         Icon(imageVector = Icons.Default.Storage, contentDescription = null, modifier = Modifier.size(14.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text(text = "ডাটাবেস", fontSize = 11.sp)
+                        Text(text = "Database", fontSize = 11.sp)
                     }
 
                     OutlinedButton(
@@ -307,7 +348,7 @@ fun ProjectsView(
                     ) {
                         Icon(imageVector = Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(14.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text(text = "ভল্ট কি", fontSize = 11.sp)
+                        Text(text = "Vault", fontSize = 11.sp)
                     }
                 }
             }

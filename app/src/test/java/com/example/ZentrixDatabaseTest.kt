@@ -3,7 +3,6 @@ package com.example
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
-import com.example.data.InitialDataProvider
 import com.example.data.ZentrixDatabase
 import com.example.data.repository.ZentrixRepository
 import kotlinx.coroutines.flow.first
@@ -17,7 +16,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [36])
+@Config(sdk = [34])
 class ZentrixDatabaseTest {
 
     private lateinit var db: ZentrixDatabase
@@ -38,35 +37,75 @@ class ZentrixDatabaseTest {
     }
 
     @Test
-    fun testInitialProjectsSeeded() = runBlocking {
-        repository.ensureDataPopulated()
+    fun testEmptyOnFreshStart() = runBlocking {
+        // Zero demo data test
         val projects = repository.getAllProjects().first()
-        assertTrue("Projects should be seeded", projects.isNotEmpty())
-        assertTrue("Should include Free Fire Esports project", projects.any { it.id == "zentrix-esport" })
-        assertTrue("Should include Calculator project", projects.any { it.id == "zentrix-calc" })
-        assertTrue("Should include AI project", projects.any { it.id == "zentrix-ai" })
+        assertTrue("Initially empty on fresh start with zero demo data", projects.isEmpty())
     }
 
     @Test
-    fun testSecretsSeeded() = runBlocking {
-        repository.ensureDataPopulated()
-        val secrets = repository.getAllSecrets().first()
-        assertTrue("Secrets should include ImgBB key", secrets.any { it.keyName == "IMGBB_API_KEY" })
-        assertTrue("Secrets should include bKash app key", secrets.any { it.keyName == "BKASH_MERCHANT_APP_KEY" })
-    }
-
-    @Test
-    fun testCreateCustomProject() = runBlocking {
+    fun testCreateCustomProjectWithPackageName() = runBlocking {
         val proj = repository.createProject(
             name = "Zentrix Custom App",
-            bnName = "কাস্টম অ্যাপ",
-            description = "Custom testing project",
-            category = "Games",
-            publishStatus = "Play Store Live"
+            appName = "Zentrix Esport Tournament",
+            packageName = "com.zentrix.esport",
+            versionName = "1.0.0",
+            description = "Custom testing tournament project",
+            category = "Esports / Gaming",
+            publishStatus = "Direct APK"
         )
         assertNotNull(proj)
+        assertEquals("Zentrix Esport Tournament", proj.appName)
+        assertEquals("com.zentrix.esport", proj.packageName)
         assertTrue(proj.adminKey.startsWith("zx_sec_adm"))
         assertTrue(proj.staffKey.startsWith("zx_stf_mod"))
         assertTrue(proj.clientPublicKey.startsWith("zx_pub_live"))
+    }
+
+    @Test
+    fun testLoadTemplatesAndClearAll() = runBlocking {
+        repository.loadStarterTemplates()
+        val projects = repository.getAllProjects().first()
+        assertEquals(2, projects.size)
+
+        // Wipe all data
+        repository.clearAllData()
+        val afterWipe = repository.getAllProjects().first()
+        assertTrue(afterWipe.isEmpty())
+    }
+
+    @Test
+    fun testUserWithPhoneAndBulkBlock() = runBlocking {
+        repository.createUser(
+            projectId = "test-project",
+            email = "player1@zentrix.io",
+            phoneNumber = "+8801712345678",
+            displayName = "Player One",
+            role = "USER",
+            provider = "gmail"
+        )
+        repository.createUser(
+            projectId = "test-project",
+            email = "player2@zentrix.io",
+            phoneNumber = "+8801899887766",
+            displayName = "Player Two",
+            role = "USER",
+            provider = "phone_otp"
+        )
+
+        val users = repository.getUsersForProject("test-project").first()
+        assertEquals(2, users.size)
+        assertTrue(users.any { it.phoneNumber == "+8801712345678" })
+
+        // Test bulk block
+        val uids = users.map { it.uid }
+        repository.bulkBlockUsers(uids, "test-project")
+        val blockedUsers = repository.getUsersForProject("test-project").first()
+        assertTrue(blockedUsers.all { it.status == "BLOCKED" })
+
+        // Test bulk unblock
+        repository.bulkUnblockUsers(uids, "test-project")
+        val unblockedUsers = repository.getUsersForProject("test-project").first()
+        assertTrue(unblockedUsers.all { it.status == "ACTIVE" })
     }
 }

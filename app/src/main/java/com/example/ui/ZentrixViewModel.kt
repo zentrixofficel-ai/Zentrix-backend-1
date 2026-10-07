@@ -11,22 +11,19 @@ import com.example.data.model.ProjectEntity
 import com.example.data.model.VaultSecretEntity
 import com.example.data.repository.KeyType
 import com.example.data.repository.ZentrixRepository
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
-enum class ConsoleTab(val title: String, val bnTitle: String) {
-    PROJECTS("Projects", "প্রজেক্টসমূহ"),
-    SDK_CONNECT("SDK & Keys", "কানেকশন ও কি"),
-    VAULT("Secret Vault", "সিক্রেট ভল্ট"),
-    AUTH("Auth & Users", "ব্যবহারকারী"),
-    DATABASE("Database", "ডাটাবেস"),
-    SECURITY("Security Rules", "সিকিউরিটি রুলস"),
-    ANALYTICS("Logs & Metrics", "অ্যানালিটিক্স ও লগ")
+enum class ConsoleTab(val title: String, val subtitle: String) {
+    PROJECTS("Projects", "Manage Apps"),
+    SDK_CONNECT("SDK & Keys", "Code Snippets"),
+    VAULT("Secret Vault", "API Keys & Gateways"),
+    AUTH("Auth & Users", "Accounts & Access"),
+    DATABASE("Database", "Collections & Tables"),
+    SECURITY("Security Rules", "Zero-Trust Policies"),
+    DATA_EXPLORER("Data Explorer", "All Saved Records"),
+    ANALYTICS("Logs & Metrics", "Audit Trail"),
+    SETTINGS("Console Settings", "Database & Reset")
 }
 
 data class RuleSimulationResult(
@@ -42,19 +39,17 @@ class ZentrixViewModel(application: Application) : AndroidViewModel(application)
     init {
         val db = ZentrixDatabase.getDatabase(application)
         repository = ZentrixRepository(db.zentrixDao())
-        viewModelScope.launch {
-            repository.ensureDataPopulated()
-        }
     }
 
-    // Navigation and Active Selection
+    // Navigation Tab
     private val _currentTab = MutableStateFlow(ConsoleTab.PROJECTS)
     val currentTab: StateFlow<ConsoleTab> = _currentTab.asStateFlow()
 
-    private val _selectedProjectId = MutableStateFlow("zentrix-esport")
+    // Selected Project ID
+    private val _selectedProjectId = MutableStateFlow<String>("")
     val selectedProjectId: StateFlow<String> = _selectedProjectId.asStateFlow()
 
-    // Revealed Secrets Visibility map (secretId -> isVisible)
+    // Secrets Visibility Map (secretId -> isVisible)
     private val _revealedSecrets = MutableStateFlow<Map<Long, Boolean>>(emptyMap())
     val revealedSecrets: StateFlow<Map<Long, Boolean>> = _revealedSecrets.asStateFlow()
 
@@ -62,19 +57,15 @@ class ZentrixViewModel(application: Application) : AndroidViewModel(application)
     private val _selectedCollection = MutableStateFlow<String?>(null)
     val selectedCollection: StateFlow<String?> = _selectedCollection.asStateFlow()
 
-    // Search queries
-    val searchQuery = MutableStateFlow("")
-
-    // Notification toast / message
+    // Notification toast / snackbar message
     private val _toastMessage = MutableStateFlow<String?>(null)
     val toastMessage: StateFlow<String?> = _toastMessage.asStateFlow()
 
-    // Dialog flags
+    // Dialog state flags
     val showCreateProjectDialog = MutableStateFlow(false)
     val showAddSecretDialog = MutableStateFlow(false)
     val showAddUserDialog = MutableStateFlow(false)
     val showAddDocDialog = MutableStateFlow(false)
-    val showSimulateRuleDialog = MutableStateFlow(false)
 
     // Data streams from repository
     val allProjects: StateFlow<List<ProjectEntity>> = repository.getAllProjects()
@@ -91,6 +82,9 @@ class ZentrixViewModel(application: Application) : AndroidViewModel(application)
         secrets.filter { it.projectId == "global" || it.projectId == projId }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val allGlobalSecrets: StateFlow<List<VaultSecretEntity>> = repository.getAllSecrets()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     val authUsers: StateFlow<List<AuthUserEntity>> = combine(
         repository.getAllUsers(),
         selectedProjectId
@@ -98,50 +92,40 @@ class ZentrixViewModel(application: Application) : AndroidViewModel(application)
         users.filter { it.projectId == projId }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val collections: StateFlow<List<String>> = combine(
-        repository.getAllDocumentsForProject("zentrix-esport"),
-        selectedProjectId
-    ) { _, projId ->
-        // will be dynamically updated by combining all docs
-        emptyList<String>()
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val allGlobalUsers: StateFlow<List<AuthUserEntity>> = repository.getAllUsers()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val projectDocuments: StateFlow<List<DataDocumentEntity>> = combine(
-        allProjects,
-        selectedProjectId,
-        selectedCollection
-    ) { _, projId, collectionName ->
-        projId
-    }.let {
-        repository.getAllDocumentsForProject("zentrix-esport")
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-    }
+    // All documents across the entire backend (for Data Explorer)
+    val allDocumentsAcrossProjects: StateFlow<List<DataDocumentEntity>> = repository.getAllDocuments()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    // Dynamic Documents flow based on selected project
-    val documentsForSelectedProject: StateFlow<List<DataDocumentEntity>> = combine(
-        repository.getAllProjects(),
-        selectedProjectId
-    ) { _, projId ->
-        projId
-    }.combine(repository.getAllAuditLogs()) { projId, _ ->
-        projId
-    }.let {
-        // We'll read documents with a combined state flow
-        MutableStateFlow<List<DataDocumentEntity>>(emptyList())
-    }
+    // Documents for currently active project
+    val documentsForSelectedProject = MutableStateFlow<List<DataDocumentEntity>>(emptyList())
 
     val auditLogs: StateFlow<List<AuditLogEntity>> = repository.getAllAuditLogs()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
-        // Observe documents for current project
+        // Automatically sync active project selection and documents
         viewModelScope.launch {
-            combine(selectedProjectId, repository.getAllProjects()) { id, _ -> id }.collect { id ->
-                repository.getAllDocumentsForProject(id).collect { docs ->
-                    (documentsForSelectedProject as MutableStateFlow).value = docs
-                    if (_selectedCollection.value == null && docs.isNotEmpty()) {
-                        _selectedCollection.value = docs.first().collectionName
+            allProjects.collect { projects ->
+                if (_selectedProjectId.value.isBlank() && projects.isNotEmpty()) {
+                    _selectedProjectId.value = projects.first().id
+                }
+            }
+        }
+
+        viewModelScope.launch {
+            selectedProjectId.collect { id ->
+                if (id.isNotBlank()) {
+                    repository.getAllDocumentsForProject(id).collect { docs ->
+                        documentsForSelectedProject.value = docs
+                        if (_selectedCollection.value == null && docs.isNotEmpty()) {
+                            _selectedCollection.value = docs.first().collectionName
+                        }
                     }
+                } else {
+                    documentsForSelectedProject.value = emptyList()
                 }
             }
         }
@@ -155,7 +139,7 @@ class ZentrixViewModel(application: Application) : AndroidViewModel(application)
     fun selectProject(projectId: String) {
         _selectedProjectId.value = projectId
         _selectedCollection.value = null
-        showToast("সক্রিয় প্রজেক্ট পরিবর্তন হয়েছে: $projectId")
+        showToast("Switched active project: $projectId")
     }
 
     fun selectCollection(name: String) {
@@ -179,7 +163,9 @@ class ZentrixViewModel(application: Application) : AndroidViewModel(application)
     // Project Actions
     fun createProject(
         name: String,
-        bnName: String,
+        appName: String,
+        packageName: String,
+        versionName: String,
         description: String,
         category: String,
         publishStatus: String,
@@ -188,14 +174,16 @@ class ZentrixViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch {
             val created = repository.createProject(
                 name = name,
-                bnName = bnName,
+                appName = appName,
+                packageName = packageName,
+                versionName = versionName,
                 description = description,
                 category = category,
                 publishStatus = publishStatus,
                 environment = environment
             )
             _selectedProjectId.value = created.id
-            showToast("নতুন প্রজেক্ট তৈরি সফল: ${created.name}")
+            showToast("Project '${created.appName}' created successfully!")
         }
     }
 
@@ -203,10 +191,8 @@ class ZentrixViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch {
             repository.deleteProject(projectId)
             val remaining = allProjects.value.filter { it.id != projectId }
-            if (remaining.isNotEmpty()) {
-                _selectedProjectId.value = remaining.first().id
-            }
-            showToast("প্রজেক্ট মুছে ফেলা হয়েছে")
+            _selectedProjectId.value = remaining.firstOrNull()?.id ?: ""
+            showToast("Project deleted from cluster.")
         }
     }
 
@@ -220,7 +206,7 @@ class ZentrixViewModel(application: Application) : AndroidViewModel(application)
                 KeyType.CLIENT -> project.copy(clientPublicKey = newKey)
             }
             repository.updateProject(updated)
-            showToast("${keyType.name} Key সফলভাবে রিনিউ হয়েছে!")
+            showToast("${keyType.name} Key rotated and updated!")
         }
     }
 
@@ -233,7 +219,7 @@ class ZentrixViewModel(application: Application) : AndroidViewModel(application)
         isGlobal: Boolean
     ) {
         viewModelScope.launch {
-            val targetProj = if (isGlobal) "global" else _selectedProjectId.value
+            val targetProj = if (isGlobal || _selectedProjectId.value.isBlank()) "global" else _selectedProjectId.value
             repository.addSecret(
                 projectId = targetProj,
                 keyName = keyName,
@@ -241,71 +227,98 @@ class ZentrixViewModel(application: Application) : AndroidViewModel(application)
                 category = category,
                 description = description
             )
-            showToast("সিক্রেট ভল্টে সেভ হয়েছে: $keyName")
+            showToast("Vault secret '$keyName' saved successfully.")
         }
     }
 
     fun deleteSecret(secret: VaultSecretEntity) {
         viewModelScope.launch {
             repository.deleteSecret(secret.id, secret.keyName, secret.projectId)
-            showToast("সিক্রেট মুছে ফেলা হয়েছে: ${secret.keyName}")
+            showToast("Secret '${secret.keyName}' removed.")
         }
     }
 
     // Auth User Actions
-    fun addUser(email: String, displayName: String, role: String, provider: String) {
+    fun addUser(email: String, phoneNumber: String, displayName: String, role: String, provider: String) {
         viewModelScope.launch {
+            val projId = _selectedProjectId.value.ifBlank { "global" }
             repository.createUser(
-                projectId = _selectedProjectId.value,
+                projectId = projId,
                 email = email,
+                phoneNumber = phoneNumber,
                 displayName = displayName,
                 role = role,
                 provider = provider
             )
-            showToast("ব্যবহারকারী যুক্ত হয়েছে: $displayName ($role)")
+            showToast("User '$displayName' registered ($role).")
         }
     }
 
     fun updateUserRole(uid: String, role: String) {
         viewModelScope.launch {
             repository.updateUserRole(uid, _selectedProjectId.value, role)
-            showToast("ইউজার রোল আপডেট হয়েছে: $role")
+            showToast("User role updated to $role.")
         }
     }
 
     fun toggleUserBan(user: AuthUserEntity) {
         viewModelScope.launch {
             repository.toggleUserBan(user)
-            val status = if (user.status == "BANNED") "আনব্যান" else "ব্যান"
-            showToast("ইউজারকে $status করা হয়েছে")
+            val status = if (user.status == "BLOCKED" || user.status == "BANNED") "Unblocked" else "Blocked"
+            showToast("User '${user.displayName}' is now $status.")
+        }
+    }
+
+    fun bulkBlockUsers(uids: List<String>) {
+        viewModelScope.launch {
+            val projId = _selectedProjectId.value.ifBlank { "global" }
+            repository.bulkBlockUsers(uids, projId)
+            showToast("Bulk blocked ${uids.size} users.")
+        }
+    }
+
+    fun bulkUnblockUsers(uids: List<String>) {
+        viewModelScope.launch {
+            val projId = _selectedProjectId.value.ifBlank { "global" }
+            repository.bulkUnblockUsers(uids, projId)
+            showToast("Bulk unblocked ${uids.size} users.")
+        }
+    }
+
+    fun bulkDeleteUsers(uids: List<String>) {
+        viewModelScope.launch {
+            val projId = _selectedProjectId.value.ifBlank { "global" }
+            repository.bulkDeleteUsers(uids, projId)
+            showToast("Bulk deleted ${uids.size} users.")
         }
     }
 
     fun deleteUser(user: AuthUserEntity) {
         viewModelScope.launch {
             repository.deleteUser(user.uid, user.projectId)
-            showToast("ইউজার অ্যাকাউন্ট মুছে ফেলা হয়েছে")
+            showToast("User account deleted.")
         }
     }
 
     // Database Actions
     fun addDocument(collectionName: String, title: String, dataJson: String) {
         viewModelScope.launch {
+            val projId = _selectedProjectId.value.ifBlank { "default-project" }
             repository.addDocument(
-                projectId = _selectedProjectId.value,
+                projectId = projId,
                 collectionName = collectionName,
                 title = title,
                 dataJson = dataJson
             )
             _selectedCollection.value = collectionName
-            showToast("ডকুমেন্ট সফলভাবে সংরক্ষণ হয়েছে")
+            showToast("Document saved to collection '$collectionName'.")
         }
     }
 
     fun deleteDocument(doc: DataDocumentEntity) {
         viewModelScope.launch {
             repository.deleteDocument(doc.id, doc.projectId, doc.collectionName)
-            showToast("ডকুমেন্ট মুছে ফেলা হয়েছে")
+            showToast("Document deleted.")
         }
     }
 
@@ -318,45 +331,63 @@ class ZentrixViewModel(application: Application) : AndroidViewModel(application)
                 projectId = project.id,
                 action = "SECURITY_RULES_DEPLOYED",
                 actor = "Master Admin",
-                details = "Deployed updated cloud security rules v2."
+                details = "Deployed updated cloud security rules v2.4."
             )
-            showToast("সিকিউরিটি রুলস লাইভ সার্ভারে ডিপ্লয় সম্পন্ন!")
+            showToast("Security rules deployed to live cluster!")
         }
     }
 
+    // Rule Simulator
     fun simulateRule(role: String, operation: String, path: String): RuleSimulationResult {
-        // Realistic evaluator simulation for rule tester
         return when {
             role == "ADMIN" -> RuleSimulationResult(
                 allowed = true,
                 matchedRule = "allow read, write: if request.auth.role == 'ADMIN'",
-                details = "Access Granted: Master Admin has superuser bypass on cluster."
+                details = "Access Granted: Master Admin has superuser root permissions."
             )
-            role == "STAFF" && (path.contains("tournament") || path.contains("match") || path.contains("catalog")) -> RuleSimulationResult(
+            role == "STAFF" && (path.contains("tournament") || path.contains("match") || path.contains("catalog") || path.contains("channel")) -> RuleSimulationResult(
                 allowed = true,
                 matchedRule = "allow read, write: if request.auth.role in ['ADMIN', 'STAFF']",
-                details = "Access Granted: Staff permissions verified for gaming & tournament operations."
+                details = "Access Granted: Staff permissions verified for operation."
             )
             role == "STAFF" && (path.contains("vault") || path.contains("secret") || path.contains("payment_key")) -> RuleSimulationResult(
                 allowed = false,
                 matchedRule = "allow read, write: if request.auth.role == 'ADMIN'",
                 details = "Access Denied: Staff token is forbidden from accessing Admin Master Vault."
             )
-            role == "USER" && operation == "READ" && (path.contains("tournament") || path.contains("catalog") || path.contains("leaderboard")) -> RuleSimulationResult(
+            role == "USER" && operation == "READ" -> RuleSimulationResult(
                 allowed = true,
                 matchedRule = "allow read: if true;",
-                details = "Access Granted: Public read policy active on live game data."
+                details = "Access Granted: Public read policy active on client collection."
             )
-            role == "USER" && operation == "WRITE" && path.contains("payment") -> RuleSimulationResult(
+            role == "USER" && operation == "WRITE" && (path.contains("payment") || path.contains("score") || path.contains("chat")) -> RuleSimulationResult(
                 allowed = true,
                 matchedRule = "allow create: if request.auth != null;",
-                details = "Access Granted: Authenticated client allowed to submit payment receipts."
+                details = "Access Granted: Authenticated client allowed to submit record."
             )
             else -> RuleSimulationResult(
                 allowed = false,
                 matchedRule = "default: deny all;",
-                details = "Access Denied: No permissive policy matches for $role doing $operation on $path"
+                details = "Access Denied: No matching permissive security rule found for $role."
             )
+        }
+    }
+
+    // Clean & Manage Console ("app সদা করার / কোনো Demo না রাখা")
+    fun clearAllData() {
+        viewModelScope.launch {
+            repository.clearAllData()
+            _selectedProjectId.value = ""
+            _selectedCollection.value = null
+            documentsForSelectedProject.value = emptyList()
+            showToast("All data wiped. Zero demo data remains.")
+        }
+    }
+
+    fun loadStarterTemplates() {
+        viewModelScope.launch {
+            repository.loadStarterTemplates()
+            showToast("Starter app templates loaded.")
         }
     }
 }

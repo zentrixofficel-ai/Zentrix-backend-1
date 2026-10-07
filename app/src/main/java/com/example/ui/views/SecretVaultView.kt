@@ -81,7 +81,7 @@ fun SecretVaultView(
                             color = TextPrimary
                         )
                         Text(
-                            text = "ImgBB, Payment Gateway (bKash/Nagad), AI API Key ভল্ট",
+                            text = "Secure store for ImgBB API, Payment Gateways (bKash/Nagad), and AI tokens",
                             style = MaterialTheme.typography.bodySmall,
                             color = ZentrixAmber,
                             fontSize = 12.sp
@@ -91,7 +91,7 @@ fun SecretVaultView(
 
                 Spacer(modifier = Modifier.height(10.dp))
                 Text(
-                    text = "ক্লায়েন্ট এপিকেতে সরাসরি হার্ডকোড না করে সার্ভার ভল্ট থেকে সরাসরি রিকোয়েস্ট পাস হবে। ফুল সিকিউরিটি ও AES-256 এনক্রিপশন সক্রিয়।",
+                    text = "Encrypted with AES-256-GCM. Sensitive credentials are kept on the server cluster and never hardcoded in client application binaries.",
                     style = MaterialTheme.typography.bodySmall,
                     color = TextSecondary,
                     lineHeight = 16.sp
@@ -107,14 +107,14 @@ fun SecretVaultView(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     StatusBadge(
-                        text = "এনক্রিপশন: AES-GCM 256-bit",
+                        text = "CIPHER: AES-GCM 256-BIT",
                         color = ZentrixGreen
                     )
                     Button(
                         onClick = onAddSecretClick,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = ZentrixAmber,
-                            contentColor = Color(0xFF261900)
+                            contentColor = ConsoleBackground
                         ),
                         shape = RoundedCornerShape(8.dp),
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
@@ -122,7 +122,7 @@ fun SecretVaultView(
                     ) {
                         Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("নতুন সিক্রেট যোগ করুন", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Text("Add New Secret", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -136,11 +136,21 @@ fun SecretVaultView(
                         .padding(40.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = "এই প্রজেক্টে এখনও কোনো সিক্রেট কি নেই। 'নতুন সিক্রেট যোগ করুন' বাটনে চাপুন।",
-                        color = TextMuted,
-                        fontSize = 12.sp
-                    )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(Icons.Default.Lock, contentDescription = null, tint = TextMuted, modifier = Modifier.size(40.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Vault is empty (Zero demo data).",
+                            color = TextPrimary,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp
+                        )
+                        Text(
+                            text = "Click 'Add New Secret' to store your real ImgBB or payment API keys.",
+                            color = TextMuted,
+                            fontSize = 11.sp
+                        )
+                    }
                 }
             }
         }
@@ -166,7 +176,7 @@ fun SecretVaultView(
                             color = ZentrixCyan
                         )
                         Text(
-                            text = if (secret.projectId == "global") "গ্লোবাল ক্লাস্টার কি" else "প্রজেক্ট: ${secret.projectId}",
+                            text = if (secret.projectId == "global") "Global Cluster Secret" else "Project: ${secret.projectId}",
                             color = TextSecondary,
                             fontSize = 11.sp
                         )
@@ -225,7 +235,7 @@ fun SecretVaultView(
                             IconButton(
                                 onClick = {
                                     copyToClipboard(context, secret.keyName, secret.secretValue) {
-                                        onShowToast("${secret.keyName} কপি হয়েছে!")
+                                        onShowToast("${secret.keyName} copied to clipboard")
                                     }
                                 },
                                 modifier = Modifier.size(32.dp)
@@ -254,7 +264,7 @@ fun SecretVaultView(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Footer row: Test Connection Ping & Delete
+                // Footer row: Ping Verification & Delete
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -262,7 +272,7 @@ fun SecretVaultView(
                 ) {
                     OutlinedButton(
                         onClick = {
-                            onShowToast("${secret.keyName} ভ্যালিড ও কানেকশন সচল! [200 OK]")
+                            onShowToast("${secret.keyName} ping check: Valid & Online [200 OK]")
                         },
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = ZentrixGreen),
                         border = androidx.compose.foundation.BorderStroke(1.dp, ZentrixGreen.copy(alpha = 0.5f)),
@@ -271,7 +281,7 @@ fun SecretVaultView(
                     ) {
                         Icon(imageVector = Icons.Default.Check, contentDescription = null, modifier = Modifier.size(14.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("টেস্ট পিং (Test Key)", fontSize = 11.sp)
+                        Text("Test Ping", fontSize = 11.sp)
                     }
 
                     IconButton(
@@ -296,11 +306,11 @@ fun SecretVaultView(
             onDismissRequest = { secretToDelete = null },
             containerColor = ConsoleSurface,
             title = {
-                Text(text = "সিক্রেট মুছে ফেলবেন?", color = TextPrimary, fontWeight = FontWeight.Bold)
+                Text(text = "Revoke Vault Secret?", color = TextPrimary, fontWeight = FontWeight.Bold)
             },
             text = {
                 Text(
-                    text = "${secret.keyName} ভল্ট থেকে মুছে দিলে সংযুক্ত এপিআই কল কাজ করবে না।",
+                    text = "Removing '${secret.keyName}' from the vault will revoke authorization for incoming client API requests. Are you sure?",
                     color = TextSecondary,
                     fontSize = 13.sp
                 )
@@ -313,12 +323,12 @@ fun SecretVaultView(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = ZentrixRed)
                 ) {
-                    Text("মুছে ফেলুন")
+                    Text("Delete")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { secretToDelete = null }) {
-                    Text("বাতিল", color = TextSecondary)
+                    Text("Cancel", color = TextSecondary)
                 }
             }
         )

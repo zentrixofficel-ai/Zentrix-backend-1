@@ -14,7 +14,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -35,7 +34,7 @@ fun SdkConfigView(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    var selectedLanguage by remember { mutableStateOf("JavaScript") }
+    var selectedLanguage by remember { mutableStateOf("Kotlin (Android)") }
     var keyToRotateConfirm by remember { mutableStateOf<KeyType?>(null) }
 
     if (project == null) {
@@ -43,7 +42,12 @@ fun SdkConfigView(
             modifier = modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            Text("অনুগ্রহ করে একটি প্রজেক্ট নির্বাচন করুন", color = TextSecondary)
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(Icons.Default.Apps, contentDescription = null, tint = TextMuted, modifier = Modifier.size(48.dp))
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("No Active App Selected", color = TextPrimary, fontWeight = FontWeight.Bold)
+                Text("Select or register an application in the Projects tab to view SDK credentials.", color = TextMuted, fontSize = 12.sp)
+            }
         }
         return
     }
@@ -83,23 +87,24 @@ fun SdkConfigView(
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Zentrix SDK & Staff Keys",
+                            text = "Zentrix SDK & Connection Hub",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = TextPrimary
                         )
                         Text(
-                            text = "Firebase এর মতো আপনার অ্যাপসে `const zentrix = ...` দিয়ে কানেক্ট করুন।",
+                            text = "App: ${project.appName} • pkg: ${project.packageName}",
+                            fontFamily = FontFamily.Monospace,
                             style = MaterialTheme.typography.bodySmall,
                             color = ZentrixCyan,
-                            fontSize = 12.sp
+                            fontSize = 11.sp
                         )
                     }
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
                 Text(
-                    text = "প্রজেক্ট বানানো সম্পন্ন হলে Admin, Staff ও Client অ্যাপের জন্য আলাদা সিক্রেট কি দিয়ে ক্লাউড ডাটাবেস ও অথ সার্ভিস এক্সেস করা যায়।",
+                    text = "Similar to Firebase SDK initialization, Zentrix generates distinct keys for Admin, Staff/Moderators, and Client applications with custom package bindings.",
                     style = MaterialTheme.typography.bodySmall,
                     color = TextSecondary,
                     lineHeight = 16.sp
@@ -107,10 +112,10 @@ fun SdkConfigView(
             }
         }
 
-        // Section: The 3 Tier Security Keys
+        // Section: 3 Tier Security Keys
         item {
             Text(
-                text = "১. সিকিউরিটি কি ম্যানেজার (Security Credentials)",
+                text = "1. Security Credentials & Access Keys",
                 style = MaterialTheme.typography.titleSmall,
                 color = TextPrimary,
                 fontWeight = FontWeight.Bold
@@ -121,14 +126,14 @@ fun SdkConfigView(
         item {
             KeyCard(
                 title = "Admin Master Secret Key",
-                bnTitle = "এডমিন মাস্টার কি (সম্পূর্ণ ফুল এক্সেস)",
+                subTitle = "Full root access for vault management, DB drop, and keys",
                 keyString = project.adminKey,
                 badgeText = "SUPER_ADMIN",
                 badgeColor = ZentrixRed,
-                scopeDescription = "সম্পূর্ণ রুট এক্সেস: সিক্রেট ভল্ট, পেমেন্ট গেটওয়ে, ইউজার ডিলিট এবং ডাটাবেস কন্ট্রোল।",
+                scopeDescription = "Unrestricted access. Keep strictly on server backend. Never package into public client APKs.",
                 onCopy = {
-                    copyToClipboard(context, "Zentrix Admin Key", project.adminKey) {
-                        onShowToast("Admin Key কপি হয়েছে!")
+                    copyToClipboard(context, "Admin Key", project.adminKey) {
+                        onShowToast("Admin Key copied to clipboard")
                     }
                 },
                 onRotate = { keyToRotateConfirm = KeyType.ADMIN }
@@ -139,14 +144,14 @@ fun SdkConfigView(
         item {
             KeyCard(
                 title = "Staff & Moderator Key",
-                bnTitle = "স্টাফ ও মডারেটর কি (টুর্নামেন্ট/সাপোর্ট রেফারী)",
+                subTitle = "For operators, moderators, tournament ref, and support staff",
                 keyString = project.staffKey,
                 badgeText = "STAFF_AUTHORIZED",
                 badgeColor = ZentrixAmber,
-                scopeDescription = "স্টাফ পারমিশন: টুর্নামেন্ট স্লট তৈরি, ম্যাচ রুম ও পাসওয়ার্ড দেয়া, রেজাল্ট আপলোড। ভল্ট এক্সেস ব্লকড।",
+                scopeDescription = "Permitted for tournament slot allocation, room creation, and user support. Vault secrets are blocked.",
                 onCopy = {
-                    copyToClipboard(context, "Zentrix Staff Key", project.staffKey) {
-                        onShowToast("Staff Key কপি হয়েছে!")
+                    copyToClipboard(context, "Staff Key", project.staffKey) {
+                        onShowToast("Staff Key copied to clipboard")
                     }
                 },
                 onRotate = { keyToRotateConfirm = KeyType.STAFF }
@@ -157,14 +162,14 @@ fun SdkConfigView(
         item {
             KeyCard(
                 title = "Client App Public Key",
-                bnTitle = "মোবাইল ও ওয়েব অ্যাপের ক্লায়েন্ট কি",
+                subTitle = "Safe for client Android APK and frontend web integration",
                 keyString = project.clientPublicKey,
                 badgeText = "PUBLIC_CLIENT",
                 badgeColor = ZentrixGreen,
-                scopeDescription = "এপিকে (APK) ও ব্রাউজারে সুরক্ষিত। ইউজার লগইন, পাবলিক টুর্নামেন্ট ভিউ ও স্কিমা চেক।",
+                scopeDescription = "Bound to package '${project.packageName}'. Restricted by Zero-Trust security rules.",
                 onCopy = {
-                    copyToClipboard(context, "Zentrix Client Key", project.clientPublicKey) {
-                        onShowToast("Client Public Key কপি হয়েছে!")
+                    copyToClipboard(context, "Client Key", project.clientPublicKey) {
+                        onShowToast("Client Public Key copied to clipboard")
                     }
                 },
                 onRotate = { keyToRotateConfirm = KeyType.CLIENT }
@@ -175,7 +180,7 @@ fun SdkConfigView(
         item {
             Spacer(modifier = Modifier.height(10.dp))
             Text(
-                text = "২. কোড কানেকশন স্নাইপেট (`const zentrix = ...`)",
+                text = "2. Client SDK Initialization Snippet",
                 style = MaterialTheme.typography.titleSmall,
                 color = TextPrimary,
                 fontWeight = FontWeight.Bold
@@ -188,7 +193,7 @@ fun SdkConfigView(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                listOf("JavaScript", "Kotlin (Android)", "Flutter (Dart)", "REST (cURL)").forEach { lang ->
+                listOf("Kotlin (Android)", "JavaScript", "Flutter (Dart)", "REST (cURL)").forEach { lang ->
                     val isSelected = lang == selectedLanguage
                     FilterChip(
                         selected = isSelected,
@@ -196,7 +201,7 @@ fun SdkConfigView(
                         label = { Text(lang, fontSize = 11.sp, fontWeight = FontWeight.Bold) },
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = ZentrixCyan,
-                            selectedLabelColor = Color(0xFF041E28),
+                            selectedLabelColor = ConsoleBackground,
                             containerColor = ConsoleSurfaceVariant,
                             labelColor = TextSecondary
                         )
@@ -208,14 +213,40 @@ fun SdkConfigView(
         // Snippet Box
         item {
             val codeSnippet = when (selectedLanguage) {
+                "Kotlin (Android)" -> """
+// Android Kotlin Client Setup (in Application or Activity)
+// Package: ${project.packageName}
+package ${project.packageName}
+
+import io.zentrix.sdk.ZentrixClient
+import io.zentrix.sdk.ZentrixOptions
+
+class MainApplication : android.app.Application() {
+    override fun onCreate() {
+        super.onCreate()
+        
+        // Initialize Zentrix Cloud Client
+        val zentrix = ZentrixClient.Builder()
+            .setPackageName("${project.packageName}")
+            .setProjectId("${project.id}")
+            .setPublicKey("${project.clientPublicKey}")
+            .setStaffToken("${project.staffKey}") // Provide only in Admin/Staff portal
+            .setEndpoint("https://api.zentrixcloud.io/v1")
+            .enableOfflinePersistence(true)
+            .build()
+    }
+}
+""".trimIndent()
+
                 "JavaScript" -> """
-// Firebase const firebaseConfig এর মতো Zentrix ক্লাউড ইনিশিয়ালাইজেশন
+// Zentrix Cloud SDK Initialization (Node.js or Web)
 import { initializeZentrix } from '@zentrix/cloud-sdk';
 
 const zentrix = initializeZentrix({
+  packageName: "${project.packageName}",
   projectId: "${project.id}",
   apiKey: "${project.clientPublicKey}",
-  staffKey: "${project.staffKey}", // Staff / Referee প্যানেল কানেকশনে ব্যবহৃত
+  staffKey: "${project.staffKey}",
   endpoint: "https://api.zentrixcloud.io/v1",
   environment: "${project.environment.lowercase()}",
   auth: {
@@ -223,28 +254,9 @@ const zentrix = initializeZentrix({
   }
 });
 
-// টুর্নামেন্ট ডাটা রিড করা:
-const snapshot = await zentrix.db.collection('tournaments').get();
-console.log("Connected to Zentrix Backend Cluster:", zentrix.status);
-""".trimIndent()
-
-                "Kotlin (Android)" -> """
-// Android Kotlin Client Initialization (app/src/main/...)
-import io.zentrix.sdk.ZentrixClient
-
-val zentrix = ZentrixClient.Builder()
-    .setProjectId("${project.id}")
-    .setPublicKey("${project.clientPublicKey}")
-    .setStaffToken("${project.staffKey}") // স্টাফ ও এডমিন অপারেশনের জন্য
-    .setEndpoint("https://api.zentrixcloud.io/v1")
-    .enableOfflinePersistence(true)
-    .build()
-
-// লাইভ ডাটা বা টুর্নামেন্ট লিসেন করা:
-zentrix.database.collection("tournaments")
-    .addSnapshotListener { docs, error ->
-        // Real-time update
-    }
+// Fetch documents from database:
+const documents = await zentrix.db.collection('tournaments').get();
+console.log("Connected to Zentrix cluster:", zentrix.status);
 """.trimIndent()
 
                 "Flutter (Dart)" -> """
@@ -255,6 +267,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   final zentrix = await Zentrix.initialize(
+    packageName: '${project.packageName}',
     projectId: '${project.id}',
     apiKey: '${project.clientPublicKey}',
     staffToken: '${project.staffKey}',
@@ -264,13 +277,14 @@ void main() async {
     ),
   );
   
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 """.trimIndent()
 
                 else -> """
 # cURL REST API Example
-curl -X GET "https://api.zentrixcloud.io/v1/projects/${project.id}/data/tournaments" \
+curl -X GET "https://api.zentrixcloud.io/v1/projects/${project.id}/data" \
+  -H "X-Zentrix-Package: ${project.packageName}" \
   -H "Authorization: Bearer ${project.staffKey}" \
   -H "X-Zentrix-Client-Key: ${project.clientPublicKey}" \
   -H "Content-Type: application/json"
@@ -279,10 +293,10 @@ curl -X GET "https://api.zentrixcloud.io/v1/projects/${project.id}/data/tourname
 
             CodeBlockView(
                 code = codeSnippet,
-                title = "$selectedLanguage • ${project.name}",
+                title = "$selectedLanguage • ${project.appName}",
                 onCopy = {
-                    copyToClipboard(context, "Zentrix SDK Snippet", codeSnippet) {
-                        onShowToast("$selectedLanguage কোড ক্লিপবোর্ডে কপি হয়েছে!")
+                    copyToClipboard(context, "SDK Code", codeSnippet) {
+                        onShowToast("$selectedLanguage code copied to clipboard")
                     }
                 }
             )
@@ -297,14 +311,14 @@ curl -X GET "https://api.zentrixcloud.io/v1/projects/${project.id}/data/tourname
             containerColor = ConsoleSurface,
             title = {
                 Text(
-                    text = "${keyType.name} Key পরিবর্তন করতে চান?",
+                    text = "Rotate ${keyType.name} Key?",
                     color = TextPrimary,
                     fontWeight = FontWeight.Bold
                 )
             },
             text = {
                 Text(
-                    text = "নতুন কি তৈরি করলে পুরোনো কি দিয়ে চলমান অ্যাপের রিকোয়েস্ট বন্ধ হয়ে যাবে। আপনি কি নিশ্চিত?",
+                    text = "Rotating this credential will immediately invalidate the previous key. Any apps using the old key must be updated. Confirm rotation?",
                     color = TextSecondary,
                     fontSize = 13.sp
                 )
@@ -317,12 +331,12 @@ curl -X GET "https://api.zentrixcloud.io/v1/projects/${project.id}/data/tourname
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = ZentrixRed)
                 ) {
-                    Text("হ্যাঁ, নতুন কি জেনারেট করুন")
+                    Text("Rotate Key")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { keyToRotateConfirm = null }) {
-                    Text("বাতিল", color = TextSecondary)
+                    Text("Cancel", color = TextSecondary)
                 }
             }
         )
@@ -332,7 +346,7 @@ curl -X GET "https://api.zentrixcloud.io/v1/projects/${project.id}/data/tourname
 @Composable
 private fun KeyCard(
     title: String,
-    bnTitle: String,
+    subTitle: String,
     keyString: String,
     badgeText: String,
     badgeColor: Color,
@@ -356,7 +370,7 @@ private fun KeyCard(
                     color = TextPrimary
                 )
                 Text(
-                    text = bnTitle,
+                    text = subTitle,
                     style = MaterialTheme.typography.bodySmall,
                     color = TextSecondary,
                     fontSize = 11.sp
@@ -424,7 +438,7 @@ private fun KeyCard(
             ) {
                 Icon(imageVector = Icons.Default.Refresh, contentDescription = null, tint = ZentrixAmber, modifier = Modifier.size(14.dp))
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("রিনিউ কি (Rotate)", color = ZentrixAmber, fontSize = 11.sp)
+                Text("Rotate Key", color = ZentrixAmber, fontSize = 11.sp)
             }
         }
     }

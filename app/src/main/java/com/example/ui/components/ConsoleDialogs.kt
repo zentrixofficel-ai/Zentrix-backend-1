@@ -18,20 +18,21 @@ import com.example.ui.theme.*
 @Composable
 fun CreateProjectDialog(
     onDismiss: () -> Unit,
-    onCreate: (name: String, bnName: String, desc: String, category: String, publishStatus: String, env: String) -> Unit
+    onCreate: (name: String, appName: String, packageName: String, versionName: String, desc: String, category: String, publishStatus: String, env: String) -> Unit
 ) {
-    var name by remember { mutableStateOf("") }
-    var bnName by remember { mutableStateOf("") }
+    var appName by remember { mutableStateOf("") }
+    var packageName by remember { mutableStateOf("com.company.") }
+    var versionName by remember { mutableStateOf("1.0.0") }
     var description by remember { mutableStateOf("") }
-    var category by remember { mutableStateOf("Esports / Gaming") }
-    var publishStatus by remember { mutableStateOf("Play Store Live") }
+    var category by remember { mutableStateOf("Mobile Application") }
+    var publishStatus by remember { mutableStateOf("Development") }
     var environment by remember { mutableStateOf("Production") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = ConsoleSurface,
         title = {
-            Text("নতুন প্রজেক্ট তৈরি করুন (Create Project)", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            Text("Register New Application", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
         },
         text = {
             Column(
@@ -41,17 +42,32 @@ fun CreateProjectDialog(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text("প্রজেক্টের ইংরেজি নাম (যেমন: Zentrix Esport)") },
+                    value = appName,
+                    onValueChange = {
+                        appName = it
+                        if (packageName == "com.company." || packageName.startsWith("com.company.")) {
+                            val clean = it.lowercase().filter { c -> c.isLetterOrDigit() }
+                            packageName = "com.company.$clean"
+                        }
+                    },
+                    label = { Text("App Name (e.g. Zentrix Esport)") },
                     modifier = Modifier.fillMaxWidth().testTag("proj_name_input"),
                     shape = RoundedCornerShape(8.dp)
                 )
 
                 OutlinedTextField(
-                    value = bnName,
-                    onValueChange = { bnName = it },
-                    label = { Text("বাংলা টাইটেল (যেমন: ফ্রি ফায়ার টুর্নামেন্ট)") },
+                    value = packageName,
+                    onValueChange = { packageName = it },
+                    label = { Text("Package Name / Application ID (e.g. com.zentrix.esport)") },
+                    modifier = Modifier.fillMaxWidth().testTag("proj_pkg_input"),
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
+                    shape = RoundedCornerShape(8.dp)
+                )
+
+                OutlinedTextField(
+                    value = versionName,
+                    onValueChange = { versionName = it },
+                    label = { Text("Initial Version (e.g. 1.0.0)") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(8.dp)
                 )
@@ -59,13 +75,13 @@ fun CreateProjectDialog(
                 OutlinedTextField(
                     value = description,
                     onValueChange = { description = it },
-                    label = { Text("সংক্ষিপ্ত বিবরণ (Description)") },
+                    label = { Text("Description / Functionality Notes") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(8.dp),
                     minLines = 2
                 )
 
-                Text("ক্যাটাগরি নির্বাচন:", color = TextSecondary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Text("Application Category:", color = TextSecondary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 val categories = listOf("Esports / Gaming", "Utility", "Games", "Social / Chat", "Media Streaming", "Artificial Intelligence")
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     categories.take(3).forEach { cat ->
@@ -77,14 +93,14 @@ fun CreateProjectDialog(
                     }
                 }
 
-                Text("প্লে স্টোর পাবলিশ স্ট্যাটাস:", color = TextSecondary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                listOf("Play Store Live", "No Play Store (Direct APK)", "Launch 2027").forEach { status ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        RadioButton(
-                            selected = publishStatus == status,
-                            onClick = { publishStatus = status }
+                Text("Environment Tier:", color = TextSecondary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf("Production", "Staging", "Development").forEach { env ->
+                        FilterChip(
+                            selected = environment == env,
+                            onClick = { environment = env },
+                            label = { Text(env, fontSize = 11.sp) }
                         )
-                        Text(status, color = TextPrimary, fontSize = 12.sp)
                     }
                 }
             }
@@ -92,21 +108,21 @@ fun CreateProjectDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    if (name.isNotBlank()) {
-                        onCreate(name, if (bnName.isNotBlank()) bnName else name, description, category, publishStatus, environment)
+                    if (appName.isNotBlank() && packageName.isNotBlank()) {
+                        onCreate(appName, appName, packageName, versionName, description, category, publishStatus, environment)
                         onDismiss()
                     }
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = ZentrixCyan, contentColor = ConsoleBackground),
-                enabled = name.isNotBlank(),
+                enabled = appName.isNotBlank() && packageName.isNotBlank(),
                 modifier = Modifier.testTag("submit_create_proj_btn")
             ) {
-                Text("তৈরি করুন (Create)", fontWeight = FontWeight.Bold)
+                Text("Register App", fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("বাতিল", color = TextSecondary)
+                Text("Cancel", color = TextSecondary)
             }
         }
     )
@@ -128,7 +144,7 @@ fun AddSecretDialog(
         onDismissRequest = onDismiss,
         containerColor = ConsoleSurface,
         title = {
-            Text("ভল্টে নতুন সিক্রেট কি যোগ করুন", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            Text("Store New Vault Secret", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
         },
         text = {
             Column(
@@ -140,7 +156,7 @@ fun AddSecretDialog(
                 OutlinedTextField(
                     value = keyName,
                     onValueChange = { keyName = it },
-                    label = { Text("কি নাম (যেমন: BKASH_MERCHANT_KEY, IMGBB_API_KEY)") },
+                    label = { Text("Key Identifier (e.g. IMGBB_API_KEY, BKASH_APP_KEY)") },
                     modifier = Modifier.fillMaxWidth().testTag("secret_name_input"),
                     shape = RoundedCornerShape(8.dp)
                 )
@@ -148,12 +164,12 @@ fun AddSecretDialog(
                 OutlinedTextField(
                     value = secretValue,
                     onValueChange = { secretValue = it },
-                    label = { Text("সিক্রেট ভ্যালু / টোকেন (Secret Token)") },
+                    label = { Text("Secret Token / API Key / Credential") },
                     modifier = Modifier.fillMaxWidth().testTag("secret_val_input"),
                     shape = RoundedCornerShape(8.dp)
                 )
 
-                Text("ক্যাটাগরি:", color = TextSecondary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Text("Category:", color = TextSecondary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 val cats = listOf("Payment Gateway", "Image Upload (ImgBB)", "AI Service", "Webhook", "Custom")
                 cats.forEach { c ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -168,7 +184,7 @@ fun AddSecretDialog(
                 OutlinedTextField(
                     value = description,
                     onValueChange = { description = it },
-                    label = { Text("নোট / ব্যবহার নির্দেশিকা (ঐচ্ছিক)") },
+                    label = { Text("Usage Description / Notes (Optional)") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(8.dp)
                 )
@@ -178,7 +194,7 @@ fun AddSecretDialog(
                         checked = isGlobal,
                         onCheckedChange = { isGlobal = it }
                     )
-                    Text("সব প্রজেক্টের জন্য গ্লোবাল কি হিসেবে ব্যবহার হবে", color = TextSecondary, fontSize = 11.sp)
+                    Text("Apply as Cluster Global Secret across all apps", color = TextSecondary, fontSize = 11.sp)
                 }
             }
         },
@@ -194,12 +210,12 @@ fun AddSecretDialog(
                 enabled = keyName.isNotBlank() && secretValue.isNotBlank(),
                 modifier = Modifier.testTag("submit_add_secret_btn")
             ) {
-                Text("ভল্টে সংরক্ষণ করুন", fontWeight = FontWeight.Bold)
+                Text("Save to Vault", fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("বাতিল", color = TextSecondary)
+                Text("Cancel", color = TextSecondary)
             }
         }
     )
@@ -209,9 +225,10 @@ fun AddSecretDialog(
 fun AddUserDialog(
     activeProjectId: String,
     onDismiss: () -> Unit,
-    onAdd: (email: String, name: String, role: String, provider: String) -> Unit
+    onAdd: (email: String, phone: String, name: String, role: String, provider: String) -> Unit
 ) {
     var email by remember { mutableStateOf("") }
+    var phoneNumber by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }
     var role by remember { mutableStateOf("USER") }
     var provider by remember { mutableStateOf("gmail") }
@@ -220,7 +237,7 @@ fun AddUserDialog(
         onDismissRequest = onDismiss,
         containerColor = ConsoleSurface,
         title = {
-            Text("নতুন ইউজার / অ্যাকাউন্ট যুক্ত করুন", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            Text("Create User Account", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
         },
         text = {
             Column(
@@ -232,7 +249,7 @@ fun AddUserDialog(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("ব্যবহারকারীর পুরো নাম (Full Name)") },
+                    label = { Text("Full Name / Display Name") },
                     modifier = Modifier.fillMaxWidth().testTag("user_name_input"),
                     shape = RoundedCornerShape(8.dp)
                 )
@@ -240,14 +257,22 @@ fun AddUserDialog(
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
-                    label = { Text("ইমেইল অ্যাড্রেস / Gmail Account") },
+                    label = { Text("Email Address / Gmail Account") },
                     modifier = Modifier.fillMaxWidth().testTag("user_email_input"),
                     shape = RoundedCornerShape(8.dp)
                 )
 
-                Text("অ্যাকাউন্ট রোল (Role):", color = TextSecondary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                OutlinedTextField(
+                    value = phoneNumber,
+                    onValueChange = { phoneNumber = it },
+                    label = { Text("Mobile Phone Number (e.g. +8801712345678)") },
+                    modifier = Modifier.fillMaxWidth().testTag("user_phone_input"),
+                    shape = RoundedCornerShape(8.dp)
+                )
+
+                Text("Account Role:", color = TextSecondary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf("USER" to "প্লেয়ার/ইউজার", "STAFF" to "স্টাফ", "ADMIN" to "এডমিন").forEach { (r, label) ->
+                    listOf("USER" to "Regular User", "STAFF" to "Staff / Mod", "ADMIN" to "Master Admin").forEach { (r, label) ->
                         FilterChip(
                             selected = role == r,
                             onClick = { role = r },
@@ -256,8 +281,8 @@ fun AddUserDialog(
                     }
                 }
 
-                Text("লগইন প্রোভাইডার (Auth Provider):", color = TextSecondary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                listOf("gmail" to "Google Gmail Account", "email_password" to "Email & Password", "phone_otp" to "Phone Number (OTP)").forEach { (p, label) ->
+                Text("Auth Identity Provider:", color = TextSecondary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                listOf("gmail" to "Google Account (Gmail)", "email_password" to "Email & Password", "phone_otp" to "Phone Number (SMS OTP)").forEach { (p, label) ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         RadioButton(
                             selected = provider == p,
@@ -271,21 +296,23 @@ fun AddUserDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    if (email.isNotBlank()) {
-                        onAdd(email, if (name.isNotBlank()) name else email.substringBefore("@"), role, provider)
+                    if (email.isNotBlank() || phoneNumber.isNotBlank()) {
+                        val effectiveEmail = if (email.isNotBlank()) email else "$phoneNumber@zentrix.user"
+                        val effectiveName = if (name.isNotBlank()) name else effectiveEmail.substringBefore("@")
+                        onAdd(effectiveEmail, phoneNumber, effectiveName, role, provider)
                         onDismiss()
                     }
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = ZentrixPurple),
-                enabled = email.isNotBlank(),
+                enabled = email.isNotBlank() || phoneNumber.isNotBlank(),
                 modifier = Modifier.testTag("submit_add_user_btn")
             ) {
-                Text("ইউজার তৈরি করুন", fontWeight = FontWeight.Bold)
+                Text("Register User", fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("বাতিল", color = TextSecondary)
+                Text("Cancel", color = TextSecondary)
             }
         }
     )
@@ -298,13 +325,13 @@ fun AddDocumentDialog(
     onDismiss: () -> Unit,
     onAdd: (collection: String, title: String, json: String) -> Unit
 ) {
-    var collection by remember { mutableStateOf(initialCollection ?: "tournaments") }
+    var collection by remember { mutableStateOf(initialCollection ?: "records") }
     var title by remember { mutableStateOf("") }
     var jsonBody by remember {
         mutableStateOf("""{
-  "name": "Custom Item",
+  "title": "Sample Document",
   "status": "ACTIVE",
-  "createdAt": "2026-10-06"
+  "timestamp": 1728219000
 }""")
     }
 
@@ -312,7 +339,7 @@ fun AddDocumentDialog(
         onDismissRequest = onDismiss,
         containerColor = ConsoleSurface,
         title = {
-            Text("ডাটাবেসে নতুন ডকুমেন্ট তৈরি করুন", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            Text("Store Document in Database", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
         },
         text = {
             Column(
@@ -324,7 +351,7 @@ fun AddDocumentDialog(
                 OutlinedTextField(
                     value = collection,
                     onValueChange = { collection = it },
-                    label = { Text("কালেকশন বা টেবিল নাম (যেমন: tournaments)") },
+                    label = { Text("Collection or Table Name (e.g. tournaments, items)") },
                     modifier = Modifier.fillMaxWidth().testTag("doc_collection_input"),
                     shape = RoundedCornerShape(8.dp)
                 )
@@ -332,12 +359,12 @@ fun AddDocumentDialog(
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text("ডকুমেন্ট টাইটেল (যেমন: Match #12 Finals)") },
+                    label = { Text("Document Title (e.g. Tournament Match #1)") },
                     modifier = Modifier.fillMaxWidth().testTag("doc_title_input"),
                     shape = RoundedCornerShape(8.dp)
                 )
 
-                Text("ডকুমেন্ট ডাটা (JSON ফরম্যাট):", color = TextSecondary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Text("Document Payload (JSON):", color = TextSecondary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
 
                 OutlinedTextField(
                     value = jsonBody,
@@ -360,12 +387,12 @@ fun AddDocumentDialog(
                 enabled = collection.isNotBlank() && title.isNotBlank(),
                 modifier = Modifier.testTag("submit_add_doc_btn")
             ) {
-                Text("সেভ করুন (Save)", fontWeight = FontWeight.Bold)
+                Text("Save Document", fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("বাতিল", color = TextSecondary)
+                Text("Cancel", color = TextSecondary)
             }
         }
     )

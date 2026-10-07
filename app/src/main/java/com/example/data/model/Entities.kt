@@ -4,17 +4,19 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 
 /**
- * Entity representing a managed backend project (e.g. Free Fire Tournament, Calculator, Games, etc.)
+ * Entity representing a managed backend project with App Name and Package Name
  */
 @Entity(tableName = "projects")
 data class ProjectEntity(
     @PrimaryKey val id: String,
     val name: String,
-    val bnName: String,
-    val description: String,
-    val category: String, // "Esports / Gaming", "Utility", "Games", "Social / Chat", "Media Streaming", "Artificial Intelligence"
-    val publishStatus: String, // "No Play Store (Direct APK)", "Play Store Live", "Launch 2027", "Internal / Alpha"
-    val environment: String = "Production", // "Production", "Staging", "Dev"
+    val appName: String = name,
+    val packageName: String = "com.zentrix.app",
+    val versionName: String = "1.0.0",
+    val description: String = "",
+    val category: String = "Mobile Application", // "Esports / Gaming", "Utility", "Games", "Social / Chat", "Media Streaming", "Artificial Intelligence"
+    val publishStatus: String = "Development", // "No Play Store (Direct APK)", "Play Store Live", "Launch 2027", "Internal / Alpha"
+    val environment: String = "Production", // "Production", "Staging", "Development"
     val adminKey: String, // zx_adm_...
     val staffKey: String, // zx_stf_...
     val clientPublicKey: String, // zx_pub_...
@@ -47,10 +49,11 @@ data class AuthUserEntity(
     @PrimaryKey val uid: String,
     val projectId: String,
     val email: String,
+    val phoneNumber: String = "",
     val displayName: String,
     val role: String, // "ADMIN", "STAFF", "MODERATOR", "USER"
     val provider: String, // "gmail", "email_password", "phone_otp"
-    val status: String = "ACTIVE", // "ACTIVE", "BANNED", "SUSPENDED"
+    val status: String = "ACTIVE", // "ACTIVE", "BLOCKED", "SUSPENDED"
     val createdAt: Long = System.currentTimeMillis(),
     val lastLoginAt: Long = System.currentTimeMillis()
 )

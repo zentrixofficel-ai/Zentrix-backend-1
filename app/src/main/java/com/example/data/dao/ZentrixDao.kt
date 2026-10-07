@@ -1,7 +1,6 @@
 package com.example.data.dao
 
 import androidx.room.Dao
-import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
@@ -32,6 +31,9 @@ interface ZentrixDao {
     @Query("DELETE FROM projects WHERE id = :id")
     suspend fun deleteProject(id: String)
 
+    @Query("DELETE FROM projects")
+    suspend fun clearAllProjects()
+
     // --- Vault Secrets ---
     @Query("SELECT * FROM vault_secrets ORDER BY lastUpdated DESC")
     fun getAllSecrets(): Flow<List<VaultSecretEntity>>
@@ -44,6 +46,9 @@ interface ZentrixDao {
 
     @Query("DELETE FROM vault_secrets WHERE id = :id")
     suspend fun deleteSecret(id: Long)
+
+    @Query("DELETE FROM vault_secrets")
+    suspend fun clearAllSecrets()
 
     // --- Auth Users ---
     @Query("SELECT * FROM auth_users WHERE projectId = :projectId ORDER BY createdAt DESC")
@@ -61,8 +66,17 @@ interface ZentrixDao {
     @Query("UPDATE auth_users SET status = :newStatus WHERE uid = :uid")
     suspend fun updateUserStatus(uid: String, newStatus: String)
 
+    @Query("UPDATE auth_users SET status = :newStatus WHERE uid IN (:uids)")
+    suspend fun bulkUpdateUserStatus(uids: List<String>, newStatus: String)
+
     @Query("DELETE FROM auth_users WHERE uid = :uid")
     suspend fun deleteUser(uid: String)
+
+    @Query("DELETE FROM auth_users WHERE uid IN (:uids)")
+    suspend fun bulkDeleteUsers(uids: List<String>)
+
+    @Query("DELETE FROM auth_users")
+    suspend fun clearAllUsers()
 
     // --- Data Documents / Collections ---
     @Query("SELECT DISTINCT collectionName FROM data_documents WHERE projectId = :projectId")
@@ -74,17 +88,23 @@ interface ZentrixDao {
     @Query("SELECT * FROM data_documents WHERE projectId = :projectId ORDER BY updatedAt DESC")
     fun getAllDocumentsForProject(projectId: String): Flow<List<DataDocumentEntity>>
 
+    @Query("SELECT * FROM data_documents ORDER BY updatedAt DESC")
+    fun getAllDocuments(): Flow<List<DataDocumentEntity>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertDocument(doc: DataDocumentEntity)
 
     @Query("DELETE FROM data_documents WHERE id = :id")
     suspend fun deleteDocument(id: String)
 
+    @Query("DELETE FROM data_documents")
+    suspend fun clearAllDocuments()
+
     // --- Audit Logs ---
-    @Query("SELECT * FROM audit_logs ORDER BY timestamp DESC LIMIT 100")
+    @Query("SELECT * FROM audit_logs ORDER BY timestamp DESC LIMIT 200")
     fun getAllAuditLogs(): Flow<List<AuditLogEntity>>
 
-    @Query("SELECT * FROM audit_logs WHERE projectId = :projectId ORDER BY timestamp DESC LIMIT 100")
+    @Query("SELECT * FROM audit_logs WHERE projectId = :projectId ORDER BY timestamp DESC LIMIT 200")
     fun getLogsForProject(projectId: String): Flow<List<AuditLogEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

@@ -2,7 +2,6 @@ package com.example.ui.components
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -19,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -49,7 +49,7 @@ fun TopConsoleBar(
                 .statusBarsPadding()
                 .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
-            // Header: Brand & Cluster Health
+            // Header: Brand & Cluster Status
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -72,7 +72,7 @@ fun TopConsoleBar(
                     ) {
                         Image(
                             painter = painterResource(id = R.drawable.zentrix_logo),
-                            contentDescription = "Zentrix Cloud Logo",
+                            contentDescription = "Zentrix Logo",
                             modifier = Modifier
                                 .fillMaxSize()
                                 .clip(RoundedCornerShape(8.dp)),
@@ -106,7 +106,7 @@ fun TopConsoleBar(
                             }
                         }
                         Text(
-                            text = "Admin Console • Firebase & Supabase Hub",
+                            text = "Backend Console & Multi-App Management",
                             style = MaterialTheme.typography.bodySmall,
                             fontSize = 11.sp,
                             color = TextSecondary
@@ -114,7 +114,7 @@ fun TopConsoleBar(
                     }
                 }
 
-                // Node status pill
+                // Cluster Health Badge
                 Surface(
                     color = ConsoleSurfaceVariant,
                     shape = RoundedCornerShape(20.dp),
@@ -132,7 +132,7 @@ fun TopConsoleBar(
                         )
                         Spacer(modifier = Modifier.width(5.dp))
                         Text(
-                            text = "AP-South-1 Live",
+                            text = "Live Cluster",
                             style = MaterialTheme.typography.labelSmall,
                             color = ZentrixGreen,
                             fontWeight = FontWeight.Bold,
@@ -150,7 +150,7 @@ fun TopConsoleBar(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Interactive Project Picker Chip
+                // Interactive Project Picker
                 Surface(
                     color = ConsoleSurfaceVariant,
                     shape = RoundedCornerShape(12.dp),
@@ -178,7 +178,7 @@ fun TopConsoleBar(
                             Spacer(modifier = Modifier.width(8.dp))
                             Column {
                                 Text(
-                                    text = activeProject?.name ?: "প্রজেক্ট নির্বাচন করুন",
+                                    text = activeProject?.appName ?: "No App Selected",
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = TextPrimary,
@@ -186,7 +186,8 @@ fun TopConsoleBar(
                                     overflow = TextOverflow.Ellipsis
                                 )
                                 Text(
-                                    text = activeProject?.bnName ?: "Zentrix Backend Hub",
+                                    text = if (activeProject != null) "pkg: ${activeProject.packageName}" else "Tap to choose or create an app",
+                                    fontFamily = FontFamily.Monospace,
                                     style = MaterialTheme.typography.labelSmall,
                                     color = ZentrixCyan,
                                     fontSize = 11.sp,
@@ -211,8 +212,8 @@ fun TopConsoleBar(
                     onClick = onCreateNewProjectClick,
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.filledTonalButtonColors(
-                        containerColor = ZentrixPurple.copy(alpha = 0.25f),
-                        contentColor = ZentrixViolet
+                        containerColor = ZentrixCyan.copy(alpha = 0.2f),
+                        contentColor = ZentrixCyan
                     ),
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
                     modifier = Modifier.testTag("create_project_button")
@@ -223,7 +224,7 @@ fun TopConsoleBar(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text(text = "নতুন", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Text(text = "New App", fontWeight = FontWeight.Bold, fontSize = 12.sp)
                 }
             }
         }
@@ -243,7 +244,7 @@ fun TopConsoleBar(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "প্রজেক্ট নির্বাচন (Select Project)",
+                        text = "Select Application",
                         color = TextPrimary,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold
@@ -257,11 +258,26 @@ fun TopConsoleBar(
                         .heightIn(max = 380.dp)
                 ) {
                     Text(
-                        text = "আপনার সকল Zentrix অ্যাপস ক্লাউড প্রজেক্ট:",
+                        text = "Managed applications in this backend cluster:",
                         color = TextSecondary,
                         fontSize = 12.sp,
                         modifier = Modifier.padding(bottom = 12.dp)
                     )
+
+                    if (allProjects.isEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "No apps registered yet. Click 'New App' to register your first project.",
+                                color = TextMuted,
+                                fontSize = 12.sp
+                            )
+                        }
+                    }
 
                     allProjects.forEach { project ->
                         val isSelected = project.id == activeProject?.id
@@ -284,18 +300,19 @@ fun TopConsoleBar(
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = project.name,
+                                        text = project.appName,
                                         fontWeight = FontWeight.Bold,
                                         color = if (isSelected) ZentrixCyan else TextPrimary,
                                         fontSize = 14.sp
                                     )
                                     Text(
-                                        text = project.bnName,
-                                        color = TextSecondary,
+                                        text = project.packageName,
+                                        fontFamily = FontFamily.Monospace,
+                                        color = ZentrixCyan,
                                         fontSize = 11.sp
                                     )
                                     Text(
-                                        text = "${project.category} • ${project.publishStatus}",
+                                        text = "${project.category} • ${project.environment}",
                                         color = TextMuted,
                                         fontSize = 10.sp
                                     )
@@ -316,7 +333,7 @@ fun TopConsoleBar(
             },
             confirmButton = {
                 TextButton(onClick = { showProjectDropdown = false }) {
-                    Text("বন্ধ করুন (Close)", color = ZentrixCyan)
+                    Text("Close", color = ZentrixCyan)
                 }
             }
         )

@@ -12,17 +12,15 @@ import java.util.UUID
 
 class ZentrixRepository(private val dao: ZentrixDao) {
 
-    suspend fun ensureDataPopulated() {
-        InitialDataProvider.populateInitialData(dao)
-    }
-
     // Projects
     fun getAllProjects(): Flow<List<ProjectEntity>> = dao.getAllProjects()
     fun getProjectById(id: String): Flow<ProjectEntity?> = dao.getProjectById(id)
 
     suspend fun createProject(
         name: String,
-        bnName: String,
+        appName: String,
+        packageName: String,
+        versionName: String = "1.0.0",
         description: String,
         category: String,
         publishStatus: String,
@@ -38,7 +36,9 @@ class ZentrixRepository(private val dao: ZentrixDao) {
         val newProject = ProjectEntity(
             id = id,
             name = name,
-            bnName = bnName,
+            appName = if (appName.isNotBlank()) appName else name,
+            packageName = if (packageName.isNotBlank()) packageName else "com.zentrix.${cleanSlug.ifBlank { "app" }}",
+            versionName = versionName,
             description = description,
             category = category,
             publishStatus = publishStatus,
@@ -48,7 +48,7 @@ class ZentrixRepository(private val dao: ZentrixDao) {
             clientPublicKey = clientKey,
             activeUsersCount = 1,
             apiRequestsToday = 0,
-            securityRules = """// Zentrix Security Rules for $name
+            securityRules = """// Zentrix Security Rules for $name ($packageName)
 rules_version = '2';
 service zentrix.cloud {
   match /databases/{database}/documents {
@@ -64,7 +64,7 @@ service zentrix.cloud {
                 projectId = id,
                 action = "PROJECT_CREATED",
                 actor = "Master Admin",
-                details = "Provisioned new project $name with Admin & Staff authorization keys."
+                details = "Provisioned project '$name' with package '$packageName' and 3-tier access keys."
             )
         )
         return newProject
@@ -79,8 +79,6 @@ service zentrix.cloud {
             KeyType.STAFF -> generateKey("zx_stf_mod")
             KeyType.CLIENT -> generateKey("zx_pub_live")
         }
-        val current = dao.getProjectById(projectId)
-        // Can be updated in VM or by direct query
         dao.insertLog(
             AuditLogEntity(
                 projectId = projectId,
@@ -116,7 +114,7 @@ service zentrix.cloud {
                 projectId = projectId,
                 action = "SECRET_STORED",
                 actor = "Master Admin",
-                details = "Vault stored secret for $keyName ($category)."
+                details = "Saved vault secret '$keyName' under category '$category'."
             )
         )
     }
@@ -128,7 +126,7 @@ service zentrix.cloud {
                 projectId = projectId,
                 action = "SECRET_REVOKED",
                 actor = "Master Admin",
-                details = "Deleted vault entry $keyName from storage."
+                details = "Revoked vault secret '$keyName'."
             )
         )
     }
@@ -140,6 +138,7 @@ service zentrix.cloud {
     suspend fun createUser(
         projectId: String,
         email: String,
+        phoneNumber: String = "",
         displayName: String,
         role: String,
         provider: String
@@ -149,6 +148,7 @@ service zentrix.cloud {
             uid = uid,
             projectId = projectId,
             email = email,
+            phoneNumber = phoneNumber,
             displayName = displayName,
             role = role,
             provider = provider,
@@ -158,9 +158,9 @@ service zentrix.cloud {
         dao.insertLog(
             AuditLogEntity(
                 projectId = projectId,
-                action = "USER_PROVISIONED",
+                action = "USER_CREATED",
                 actor = "Master Admin",
-                details = "Created account for $email with role $role."
+                details = "Registered account for '$email' (phone: '$phoneNumber') with role $role."
             )
         )
     }
@@ -170,22 +170,61 @@ service zentrix.cloud {
         dao.insertLog(
             AuditLogEntity(
                 projectId = projectId,
-                action = "USER_ROLE_CHANGED",
+                action = "ROLE_UPDATED",
                 actor = "Master Admin",
-                details = "Updated user $uid role to $newRole."
+                details = "Changed user $uid role to $newRole."
             )
         )
     }
 
     suspend fun toggleUserBan(user: AuthUserEntity) {
-        val newStatus = if (user.status == "BANNED") "ACTIVE" else "BANNED"
+        val newStatus = if (user.status == "BLOCKED" || user.status == "BANNED") "ACTIVE" else "BLOCKED"
         dao.updateUserStatus(user.uid, newStatus)
         dao.insertLog(
             AuditLogEntity(
                 projectId = user.projectId,
-                action = if (newStatus == "BANNED") "USER_BANNED" else "USER_RESTORED",
+                action = if (newStatus == "BLOCKED") "USER_BLOCKED" else "USER_UNBLOCKED",
                 actor = "Master Admin",
                 details = "User ${user.email} status set to $newStatus."
+            )
+        )
+    }
+
+    suspend fun bulkBlockUsers(uids: List<String>, projectId: String) {
+        if (uids.isEmpty()) return
+        dao.bulkUpdateUserStatus(uids, "BLOCKED")
+        dao.insertLog(
+            AuditLogEntity(
+                projectId = projectId,
+                action = "BULK_USERS_BLOCKED",
+                actor = "Master Admin",
+                details = "Bulk blocked ${uids.size} user accounts."
+            )
+        )
+    }
+
+    suspend fun bulkUnblockUsers(uids: List<String>, projectId: String) {
+        if (uids.isEmpty()) return
+        dao.bulkUpdateUserStatus(uids, "ACTIVE")
+        dao.insertLog(
+            AuditLogEntity(
+                projectId = projectId,
+                action = "BULK_USERS_UNBLOCKED",
+                actor = "Master Admin",
+                details = "Bulk unblocked ${uids.size} user accounts."
+            )
+        )
+    }
+
+    suspend fun bulkDeleteUsers(uids: List<String>, projectId: String) {
+        if (uids.isEmpty()) return
+        dao.bulkDeleteUsers(uids)
+        dao.insertLog(
+            AuditLogEntity(
+                projectId = projectId,
+                action = "BULK_USERS_DELETED",
+                actor = "Master Admin",
+                details = "Permanently removed ${uids.size} user accounts."
             )
         )
     }
@@ -197,7 +236,7 @@ service zentrix.cloud {
                 projectId = projectId,
                 action = "USER_DELETED",
                 actor = "Master Admin",
-                details = "Permanently deleted user account $uid."
+                details = "Removed user account $uid."
             )
         )
     }
@@ -208,6 +247,7 @@ service zentrix.cloud {
         dao.getDocuments(projectId, collectionName)
     fun getAllDocumentsForProject(projectId: String): Flow<List<DataDocumentEntity>> =
         dao.getAllDocumentsForProject(projectId)
+    fun getAllDocuments(): Flow<List<DataDocumentEntity>> = dao.getAllDocuments()
 
     suspend fun addDocument(
         projectId: String,
@@ -229,7 +269,7 @@ service zentrix.cloud {
                 projectId = projectId,
                 action = "DOCUMENT_WRITTEN",
                 actor = "Admin Console",
-                details = "Saved document $id into collection '$collectionName'."
+                details = "Stored document $id in collection '$collectionName'."
             )
         )
     }
@@ -252,6 +292,15 @@ service zentrix.cloud {
 
     suspend fun recordLog(projectId: String, action: String, actor: String, details: String) {
         dao.insertLog(AuditLogEntity(projectId = projectId, action = action, actor = actor, details = details))
+    }
+
+    // Database Reset & Templates
+    suspend fun clearAllData() {
+        InitialDataProvider.clearAllData(dao)
+    }
+
+    suspend fun loadStarterTemplates() {
+        InitialDataProvider.loadStarterTemplates(dao)
     }
 
     private fun generateKey(prefix: String): String {

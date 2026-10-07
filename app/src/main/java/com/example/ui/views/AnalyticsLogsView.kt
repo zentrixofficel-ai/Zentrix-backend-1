@@ -33,7 +33,7 @@ fun AnalyticsLogsView(
     onShowToast: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val dateFormat = remember { SimpleDateFormat("hh:mm:ss a, dd MMM", Locale.getDefault()) }
+    val dateFormat = remember { SimpleDateFormat("hh:mm:ss a, dd MMM", Locale.US) }
 
     LazyColumn(
         modifier = modifier
@@ -70,13 +70,13 @@ fun AnalyticsLogsView(
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Server Cluster Metrics & Logs",
+                            text = "Server Metrics & Audit Trail",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = TextPrimary
                         )
                         Text(
-                            text = "রিয়েলটাইম সার্ভার পারফর্ম্যান্স এবং লাইভ সিকিউরিটি অডিট ট্রেল",
+                            text = "Real-time cluster telemetry, latency monitoring, and access logs",
                             style = MaterialTheme.typography.bodySmall,
                             color = ZentrixCyan,
                             fontSize = 12.sp
@@ -92,16 +92,16 @@ fun AnalyticsLogsView(
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     MetricTile(
-                        title = "গড় রেসপন্স টাইম",
-                        value = "32 ms",
-                        subtext = "High Speed CDN",
+                        title = "Average Latency",
+                        value = "28 ms",
+                        subtext = "High Speed CDN Nodes",
                         color = ZentrixGreen,
                         modifier = Modifier.weight(1f)
                     )
                     MetricTile(
-                        title = "সার্ভার আপটাইম",
+                        title = "Cluster Uptime",
                         value = "99.98%",
-                        subtext = "Zero Downtime",
+                        subtext = "Continuous SLA",
                         color = ZentrixCyan,
                         modifier = Modifier.weight(1f)
                     )
@@ -114,16 +114,16 @@ fun AnalyticsLogsView(
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     MetricTile(
-                        title = "ImgBB স্টোরেজ ব্যবহার",
-                        value = "1.84 GB",
-                        subtext = "14,200 Assets",
+                        title = "Vault Cipher",
+                        value = "AES-256",
+                        subtext = "Encrypted at Rest",
                         color = ZentrixAmber,
                         modifier = Modifier.weight(1f)
                     )
                     MetricTile(
-                        title = "পেমেন্ট ট্রানজ্যাকশন",
-                        value = "৳ 1,42,850",
-                        subtext = "bKash & Nagad Verified",
+                        title = "Security Guard",
+                        value = "Zero-Trust",
+                        subtext = "Scoped Token Policies",
                         color = ZentrixViolet,
                         modifier = Modifier.weight(1f)
                     )
@@ -138,13 +138,13 @@ fun AnalyticsLogsView(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "লাইভ সিকিউরিটি অডিট লগ (Audit Logs)",
+                    text = "Live Security Audit Logs (${logs.size})",
                     style = MaterialTheme.typography.titleSmall,
                     color = TextPrimary,
                     fontWeight = FontWeight.Bold
                 )
 
-                StatusBadge(text = "LIVE STREAM", color = ZentrixGreen)
+                StatusBadge(text = "LIVE FEED", color = ZentrixGreen)
             }
         }
 
@@ -156,7 +156,12 @@ fun AnalyticsLogsView(
                         .padding(40.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("কোনো লগ রেকর্ড পাওয়া যায়নি", color = TextMuted)
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(Icons.Default.History, contentDescription = null, tint = TextMuted, modifier = Modifier.size(40.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("No audit log events recorded yet.", color = TextPrimary, fontWeight = FontWeight.Bold)
+                        Text("Zero demo data active. Actions like creating apps and rotating keys will log here.", color = TextMuted, fontSize = 11.sp)
+                    }
                 }
             }
         }

@@ -34,7 +34,7 @@ fun SecurityRulesView(
 ) {
     if (project == null) {
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("প্রজেক্ট নির্বাচন করুন", color = TextSecondary)
+            Text("Please select or create an application to manage security rules.", color = TextSecondary)
         }
         return
     }
@@ -46,7 +46,7 @@ fun SecurityRulesView(
     // Simulator State
     var simRole by remember { mutableStateOf("STAFF") }
     var simOp by remember { mutableStateOf("WRITE") }
-    var simPath by remember { mutableStateOf("/tournaments/squad_ff_01") }
+    var simPath by remember { mutableStateOf("/tournaments/match_01") }
     var simResult by remember { mutableStateOf<RuleSimulationResult?>(null) }
 
     LazyColumn(
@@ -90,7 +90,7 @@ fun SecurityRulesView(
                             color = TextPrimary
                         )
                         Text(
-                            text = "Firebase এর মতো ফুল সিকিউরিটি ও এক্সেস কন্ট্রোল পলিসি",
+                            text = "Zero-Trust granular access control for ${project.appName}",
                             style = MaterialTheme.typography.bodySmall,
                             color = ZentrixGreen,
                             fontSize = 12.sp
@@ -100,7 +100,7 @@ fun SecurityRulesView(
 
                 Spacer(modifier = Modifier.height(10.dp))
                 Text(
-                    text = "প্রজেক্টের প্রতিটি কালেকশন ও ডকুমেন্টের সুরক্ষা নিশ্চিত করতে এখানে রুলস লিখুন। স্টাফদের টুর্নামেন্ট ডাটা রাইট পারমিশন এবং এডমিনের ফুল ভল্ট কন্ট্রোল দেওয়া যায়।",
+                    text = "Specify read and write policies per collection based on request authentication and user roles (Admin, Staff, or Client).",
                     style = MaterialTheme.typography.bodySmall,
                     color = TextSecondary,
                     lineHeight = 16.sp
@@ -117,7 +117,7 @@ fun SecurityRulesView(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "security.rules • ${project.id}",
+                        text = "security.rules • ${project.packageName}",
                         style = MaterialTheme.typography.titleSmall,
                         fontFamily = FontFamily.Monospace,
                         color = ZentrixCyan,
@@ -135,7 +135,7 @@ fun SecurityRulesView(
                     ) {
                         Icon(imageVector = Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("ডিপ্লয় করুন (Deploy)", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Text("Deploy Rules", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
                 }
 
@@ -165,7 +165,7 @@ fun SecurityRulesView(
             }
         }
 
-        // Security Rules Testing Simulator
+        // Simulator
         item {
             ConsoleCard(
                 borderColor = ZentrixPurple.copy(alpha = 0.4f)
@@ -182,7 +182,7 @@ fun SecurityRulesView(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "সিকিউরিটি রুলস সিমুলেটর (Test Rules)",
+                        text = "Security Rules Simulator (Pre-flight Sandbox)",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         color = TextPrimary
@@ -191,7 +191,7 @@ fun SecurityRulesView(
 
                 Spacer(modifier = Modifier.height(10.dp))
                 Text(
-                    text = "অ্যাপে ছাড়ার আগেই টেস্ট করুন কোনো স্টাফ বা প্লেয়ার পারমিশন ছাড়া ডাটা রিড/রাইট করতে পারছে কি না।",
+                    text = "Test read/write permissions for specific roles before deploying to live users.",
                     style = MaterialTheme.typography.bodySmall,
                     color = TextSecondary,
                     fontSize = 11.sp
@@ -205,7 +205,7 @@ fun SecurityRulesView(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("ইউজার রোল", color = TextMuted, fontSize = 10.sp)
+                        Text("User Role", color = TextMuted, fontSize = 10.sp)
                         Spacer(modifier = Modifier.height(4.dp))
                         Row {
                             listOf("ADMIN", "STAFF", "USER").forEach { r ->
@@ -216,7 +216,7 @@ fun SecurityRulesView(
                                     modifier = Modifier.padding(end = 4.dp),
                                     colors = FilterChipDefaults.filterChipColors(
                                         selectedContainerColor = ZentrixCyan,
-                                        selectedLabelColor = Color(0xFF041E28)
+                                        selectedLabelColor = ConsoleBackground
                                     )
                                 )
                             }
@@ -224,7 +224,7 @@ fun SecurityRulesView(
                     }
 
                     Column(modifier = Modifier.weight(0.7f)) {
-                        Text("অপারেশন", color = TextMuted, fontSize = 10.sp)
+                        Text("Operation", color = TextMuted, fontSize = 10.sp)
                         Spacer(modifier = Modifier.height(4.dp))
                         Row {
                             listOf("READ", "WRITE").forEach { op ->
@@ -235,7 +235,7 @@ fun SecurityRulesView(
                                     modifier = Modifier.padding(end = 4.dp),
                                     colors = FilterChipDefaults.filterChipColors(
                                         selectedContainerColor = ZentrixAmber,
-                                        selectedLabelColor = Color(0xFF261900)
+                                        selectedLabelColor = ConsoleBackground
                                     )
                                 )
                             }
@@ -248,7 +248,7 @@ fun SecurityRulesView(
                 OutlinedTextField(
                     value = simPath,
                     onValueChange = { simPath = it },
-                    label = { Text("ডকুমেন্ট পাথ (Document Path)", fontSize = 11.sp) },
+                    label = { Text("Target Document Path (e.g. /tournaments/1)", fontSize = 11.sp) },
                     modifier = Modifier.fillMaxWidth(),
                     textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -270,7 +270,7 @@ fun SecurityRulesView(
                 ) {
                     Icon(imageVector = Icons.Default.Bolt, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("সিমুলেশন রান করুন (Simulate Request)", fontWeight = FontWeight.Bold)
+                    Text("Run Simulation Test", fontWeight = FontWeight.Bold)
                 }
 
                 if (simResult != null) {
@@ -293,7 +293,7 @@ fun SecurityRulesView(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 StatusBadge(
-                                    text = if (res.allowed) "ACCESS GRANTED (অনুমোদিত)" else "ACCESS DENIED (ব্লকড)",
+                                    text = if (res.allowed) "ACCESS GRANTED" else "ACCESS DENIED",
                                     color = if (res.allowed) ZentrixGreen else ZentrixRed
                                 )
                                 Text(

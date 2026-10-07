@@ -23,9 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.DataDocumentEntity
-import com.example.ui.components.CodeBlockView
 import com.example.ui.components.ConsoleCard
-import com.example.ui.components.StatusBadge
 import com.example.ui.components.copyToClipboard
 import com.example.ui.theme.*
 
@@ -43,14 +41,11 @@ fun DatabaseView(
     val context = LocalContext.current
     var docToDelete by remember { mutableStateOf<DataDocumentEntity?>(null) }
 
-    // Derive collections for the active project
     val availableCollections = remember(documents) {
-        documents.map { it.collectionName }.distinct().ifEmpty {
-            listOf("tournaments", "users", "configs")
-        }
+        documents.map { it.collectionName }.distinct()
     }
 
-    val currentCollection = selectedCollection ?: availableCollections.firstOrNull() ?: "tournaments"
+    val currentCollection = selectedCollection ?: availableCollections.firstOrNull() ?: "main"
 
     val filteredDocs = remember(documents, currentCollection) {
         documents.filter { it.collectionName == currentCollection }
@@ -91,13 +86,13 @@ fun DatabaseView(
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Zentrix Cloud Database",
+                            text = "Cloud Collections & Tables",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = TextPrimary
                         )
                         Text(
-                            text = "Firestore ও Supabase এর মতো নো-এসকিউএল কালেকশন ও টেবিল ম্যানেজার",
+                            text = "Firestore / Supabase NoSQL and relational document explorer",
                             style = MaterialTheme.typography.bodySmall,
                             color = ZentrixCyan,
                             fontSize = 12.sp
@@ -115,7 +110,7 @@ fun DatabaseView(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "প্রজেক্ট: $activeProjectId",
+                        text = if (activeProjectId.isNotBlank()) "App ID: $activeProjectId" else "Global Database",
                         color = TextSecondary,
                         fontSize = 11.sp
                     )
@@ -124,7 +119,7 @@ fun DatabaseView(
                         onClick = onAddDocumentClick,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = ZentrixCyan,
-                            contentColor = Color(0xFF041E28)
+                            contentColor = ConsoleBackground
                         ),
                         shape = RoundedCornerShape(8.dp),
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
@@ -132,56 +127,58 @@ fun DatabaseView(
                     ) {
                         Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("নতুন ডকুমেন্ট লিখুন", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Text("Add Document", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
         }
 
         // Collection Selector Chips
-        item {
-            Column {
-                Text(
-                    text = "কালেকশন নির্বাচন (Collections):",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = TextSecondary,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
+        if (availableCollections.isNotEmpty()) {
+            item {
+                Column {
+                    Text(
+                        text = "Collections in Database:",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = TextSecondary,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
 
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    availableCollections.forEach { colName ->
-                        val isSelected = colName == currentCollection
-                        FilterChip(
-                            selected = isSelected,
-                            onClick = { onSelectCollection(colName) },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Folder,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp),
-                                    tint = if (isSelected) Color(0xFF041E28) else ZentrixCyan
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        availableCollections.forEach { colName ->
+                            val isSelected = colName == currentCollection
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = { onSelectCollection(colName) },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Default.Folder,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp),
+                                        tint = if (isSelected) ConsoleBackground else ZentrixCyan
+                                    )
+                                },
+                                label = {
+                                    Text(
+                                        text = colName,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        fontSize = 12.sp
+                                    )
+                                },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = ZentrixCyan,
+                                    selectedLabelColor = ConsoleBackground,
+                                    containerColor = ConsoleSurfaceVariant,
+                                    labelColor = TextPrimary
                                 )
-                            },
-                            label = {
-                                Text(
-                                    text = colName,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                    fontSize = 12.sp
-                                )
-                            },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = ZentrixCyan,
-                                selectedLabelColor = Color(0xFF041E28),
-                                containerColor = ConsoleSurfaceVariant,
-                                labelColor = TextPrimary
                             )
-                        )
+                        }
                     }
                 }
             }
@@ -195,11 +192,21 @@ fun DatabaseView(
                         .padding(40.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = "কালেকশন '$currentCollection' এ কোনো রেকর্ড পাওয়া যায়নি। নতুন ডকুমেন্ট লিখুন।",
-                        color = TextMuted,
-                        fontSize = 12.sp
-                    )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(Icons.Default.Storage, contentDescription = null, tint = TextMuted, modifier = Modifier.size(40.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Collection '$currentCollection' is empty (Zero demo data).",
+                            color = TextPrimary,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp
+                        )
+                        Text(
+                            text = "Tap 'Add Document' to store your real tournament, user, or app record.",
+                            color = TextMuted,
+                            fontSize = 11.sp
+                        )
+                    }
                 }
             }
         }
@@ -219,7 +226,7 @@ fun DatabaseView(
                             color = TextPrimary
                         )
                         Text(
-                            text = "Doc ID: ${doc.id}",
+                            text = "ID: ${doc.id}",
                             fontFamily = FontFamily.Monospace,
                             fontSize = 11.sp,
                             color = ZentrixCyan
@@ -230,7 +237,7 @@ fun DatabaseView(
                         IconButton(
                             onClick = {
                                 copyToClipboard(context, doc.title, doc.dataJson) {
-                                    onShowToast("ডকুমেন্ট JSON কপি হয়েছে!")
+                                    onShowToast("Document JSON copied to clipboard")
                                 }
                             },
                             modifier = Modifier.size(32.dp)
@@ -285,11 +292,11 @@ fun DatabaseView(
             onDismissRequest = { docToDelete = null },
             containerColor = ConsoleSurface,
             title = {
-                Text("ডকুমেন্ট মুছে ফেলতে চান?", color = TextPrimary, fontWeight = FontWeight.Bold)
+                Text("Delete Database Document?", color = TextPrimary, fontWeight = FontWeight.Bold)
             },
             text = {
                 Text(
-                    text = "ডকুমেন্ট '${d.title}' (${d.id}) স্থায়ীভাবে ক্লাউড ডাটাবেস থেকে মুছে যাবে।",
+                    text = "Permanently remove '${d.title}' (${d.id}) from collection '${d.collectionName}'?",
                     color = TextSecondary,
                     fontSize = 13.sp
                 )
@@ -302,12 +309,12 @@ fun DatabaseView(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = ZentrixRed)
                 ) {
-                    Text("মুছে ফেলুন")
+                    Text("Delete")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { docToDelete = null }) {
-                    Text("বাতিল", color = TextSecondary)
+                    Text("Cancel", color = TextSecondary)
                 }
             }
         )

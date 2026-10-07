@@ -1,6 +1,5 @@
 package com.example.ui.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -12,7 +11,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -54,7 +52,9 @@ fun NavigationConsoleBar(
                     ConsoleTab.AUTH -> Icons.Default.Group
                     ConsoleTab.DATABASE -> Icons.Default.Storage
                     ConsoleTab.SECURITY -> Icons.Default.Shield
+                    ConsoleTab.DATA_EXPLORER -> Icons.Default.ManageSearch
                     ConsoleTab.ANALYTICS -> Icons.Default.Insights
+                    ConsoleTab.SETTINGS -> Icons.Default.Settings
                 }
 
                 Surface(
@@ -66,7 +66,7 @@ fun NavigationConsoleBar(
                         .testTag("nav_tab_${tab.name.lowercase()}")
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp),
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
@@ -75,7 +75,7 @@ fun NavigationConsoleBar(
                             tint = if (isSelected) ZentrixCyan else TextSecondary,
                             modifier = Modifier.size(18.dp)
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
                         Column {
                             Text(
                                 text = tab.title,
@@ -84,7 +84,7 @@ fun NavigationConsoleBar(
                                 fontSize = 12.sp
                             )
                             Text(
-                                text = tab.bnTitle,
+                                text = tab.subtitle,
                                 color = if (isSelected) ZentrixCyan.copy(alpha = 0.8f) else TextMuted,
                                 fontSize = 10.sp
                             )
