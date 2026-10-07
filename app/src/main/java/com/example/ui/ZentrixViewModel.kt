@@ -63,6 +63,7 @@ class ZentrixViewModel(application: Application) : AndroidViewModel(application)
 
     // Dialog state flags
     val showCreateProjectDialog = MutableStateFlow(false)
+    val projectToEdit = MutableStateFlow<ProjectEntity?>(null)
     val showAddSecretDialog = MutableStateFlow(false)
     val showAddUserDialog = MutableStateFlow(false)
     val showAddDocDialog = MutableStateFlow(false)
@@ -184,6 +185,13 @@ class ZentrixViewModel(application: Application) : AndroidViewModel(application)
             )
             _selectedProjectId.value = created.id
             showToast("Project '${created.appName}' created successfully!")
+        }
+    }
+
+    fun updateProject(updatedProject: ProjectEntity) {
+        viewModelScope.launch {
+            repository.updateProject(updatedProject)
+            showToast("Project '${updatedProject.appName}' updated successfully!")
         }
     }
 
@@ -373,7 +381,7 @@ class ZentrixViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    // Clean & Manage Console ("app সদা করার / কোনো Demo না রাখা")
+    // Clean & Manage Console (Wipe data / Zero demo state)
     fun clearAllData() {
         viewModelScope.launch {
             repository.clearAllData()

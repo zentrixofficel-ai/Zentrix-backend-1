@@ -1,6 +1,5 @@
 package com.example.ui.components
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -13,17 +12,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.R
 import com.example.data.model.ProjectEntity
 import com.example.ui.theme.*
 
@@ -38,193 +33,125 @@ fun TopConsoleBar(
     var showProjectDropdown by remember { mutableStateOf(false) }
 
     Surface(
-        color = ConsoleSurface,
-        border = androidx.compose.foundation.BorderStroke(1.dp, ConsoleCardBorder),
-        shape = RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp),
+        color = FirebaseSurface,
+        border = androidx.compose.foundation.BorderStroke(1.dp, FirebaseCardBorder),
+        shadowElevation = 2.dp,
         modifier = modifier.fillMaxWidth()
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .statusBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .padding(horizontal = 16.dp, vertical = 10.dp)
         ) {
-            // Header: Brand & Cluster Status
+            // Authentic Firebase Top Header (as seen in video)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // Firebase Flame Logo & Brand
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.weight(1f)
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(38.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(
-                                Brush.linearGradient(
-                                    listOf(ZentrixCyan, ZentrixPurple)
-                                )
-                            )
-                            .padding(2.dp)
+                            .size(34.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(ButtonYellow.copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.zentrix_logo),
-                            contentDescription = "Zentrix Logo",
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .clip(RoundedCornerShape(8.dp)),
-                            contentScale = ContentScale.Crop
+                        Icon(
+                            imageVector = Icons.Default.LocalFireDepartment,
+                            contentDescription = "Firebase Flame",
+                            tint = ButtonYellow,
+                            modifier = Modifier.size(24.dp)
                         )
                     }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Text(
+                        text = "Firebase",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary,
+                        fontSize = 18.sp
+                    )
 
                     Spacer(modifier = Modifier.width(10.dp))
 
-                    Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = "ZENTRIX",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Black,
-                                color = TextPrimary,
-                                letterSpacing = 1.sp
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Surface(
-                                color = ZentrixCyan.copy(alpha = 0.2f),
-                                shape = RoundedCornerShape(4.dp)
-                            ) {
-                                Text(
-                                    text = "CLOUD BAAS",
-                                    fontSize = 9.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = ZentrixCyan,
-                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
-                                )
-                            }
-                        }
-                        Text(
-                            text = "Backend Console & Multi-App Management",
-                            style = MaterialTheme.typography.bodySmall,
-                            fontSize = 11.sp,
-                            color = TextSecondary
-                        )
-                    }
-                }
-
-                // Cluster Health Badge
-                Surface(
-                    color = ConsoleSurfaceVariant,
-                    shape = RoundedCornerShape(20.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, ZentrixGreen.copy(alpha = 0.4f))
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(7.dp)
-                                .clip(CircleShape)
-                                .background(ZentrixGreen)
-                        )
-                        Spacer(modifier = Modifier.width(5.dp))
-                        Text(
-                            text = "Live Cluster",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = ZentrixGreen,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 10.sp
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // Project Selector Pill Row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                // Interactive Project Picker
-                Surface(
-                    color = ConsoleSurfaceVariant,
-                    shape = RoundedCornerShape(12.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, ZentrixCyan.copy(alpha = 0.35f)),
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable { showProjectDropdown = true }
-                        .testTag("project_picker_button")
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                    // Project Switcher Dropdown (like video: "Zentrix ES ▾")
+                    Surface(
+                        color = FirebaseSurfaceVariant,
+                        shape = RoundedCornerShape(8.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, FirebaseCardBorder),
+                        modifier = Modifier
+                            .clickable { showProjectDropdown = true }
+                            .testTag("project_picker_button")
                     ) {
                         Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.FolderSpecial,
-                                contentDescription = null,
-                                tint = ZentrixCyan,
-                                modifier = Modifier.size(20.dp)
+                            Text(
+                                text = activeProject?.appName ?: "Select Project",
+                                fontWeight = FontWeight.SemiBold,
+                                color = TextPrimary,
+                                fontSize = 12.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Column {
-                                Text(
-                                    text = activeProject?.appName ?: "No App Selected",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = TextPrimary,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                Text(
-                                    text = if (activeProject != null) "pkg: ${activeProject.packageName}" else "Tap to choose or create an app",
-                                    fontFamily = FontFamily.Monospace,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = ZentrixCyan,
-                                    fontSize = 11.sp,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Icon(
+                                imageVector = Icons.Default.ArrowDropDown,
+                                contentDescription = "Dropdown",
+                                tint = TextSecondary,
+                                modifier = Modifier.size(16.dp)
+                            )
                         }
-
-                        Icon(
-                            imageVector = Icons.Default.ArrowDropDown,
-                            contentDescription = "Switch project",
-                            tint = TextSecondary
-                        )
                     }
                 }
 
-                Spacer(modifier = Modifier.width(8.dp))
-
-                // New Project Action Button
-                FilledTonalButton(
+                // Colored Action Button (Blue: Add App / Add Project)
+                Button(
                     onClick = onCreateNewProjectClick,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.filledTonalButtonColors(
-                        containerColor = ZentrixCyan.copy(alpha = 0.2f),
-                        contentColor = ZentrixCyan
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = ButtonBlue,
+                        contentColor = Color.White
                     ),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                     modifier = Modifier.testTag("create_project_button")
                 ) {
                     Icon(
                         imageVector = Icons.Default.Add,
-                        contentDescription = "Create Project",
-                        modifier = Modifier.size(18.dp)
+                        contentDescription = "Add Project",
+                        modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text(text = "New App", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Text(text = "Add app", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                }
+            }
+
+            if (activeProject != null) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Project ID: ${activeProject.id}  •  Package: ${activeProject.packageName}",
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 11.sp,
+                        color = TextSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    StatusBadge(text = activeProject.environment.uppercase(), color = ButtonGreen)
                 }
             }
         }
@@ -234,17 +161,17 @@ fun TopConsoleBar(
     if (showProjectDropdown) {
         AlertDialog(
             onDismissRequest = { showProjectDropdown = false },
-            containerColor = ConsoleSurface,
+            containerColor = FirebaseSurface,
             title = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        imageVector = Icons.Default.Hub,
+                        imageVector = Icons.Default.LocalFireDepartment,
                         contentDescription = null,
-                        tint = ZentrixCyan
+                        tint = ButtonYellow
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Select Application",
+                        text = "Firebase Projects",
                         color = TextPrimary,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold
@@ -258,33 +185,18 @@ fun TopConsoleBar(
                         .heightIn(max = 380.dp)
                 ) {
                     Text(
-                        text = "Managed applications in this backend cluster:",
+                        text = "Select a Firebase backend project to manage:",
                         color = TextSecondary,
                         fontSize = 12.sp,
                         modifier = Modifier.padding(bottom = 12.dp)
                     )
 
-                    if (allProjects.isEmpty()) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(24.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "No apps registered yet. Click 'New App' to register your first project.",
-                                color = TextMuted,
-                                fontSize = 12.sp
-                            )
-                        }
-                    }
-
                     allProjects.forEach { project ->
                         val isSelected = project.id == activeProject?.id
                         Surface(
-                            color = if (isSelected) ConsoleSurfaceVariant else Color.Transparent,
-                            shape = RoundedCornerShape(10.dp),
-                            border = if (isSelected) androidx.compose.foundation.BorderStroke(1.dp, ZentrixCyan) else null,
+                            color = if (isSelected) Color(0xFFE8F0FE) else Color.Transparent,
+                            shape = RoundedCornerShape(8.dp),
+                            border = if (isSelected) androidx.compose.foundation.BorderStroke(1.dp, ButtonBlue) else null,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = 4.dp)
@@ -302,17 +214,17 @@ fun TopConsoleBar(
                                     Text(
                                         text = project.appName,
                                         fontWeight = FontWeight.Bold,
-                                        color = if (isSelected) ZentrixCyan else TextPrimary,
+                                        color = if (isSelected) ButtonBlue else TextPrimary,
                                         fontSize = 14.sp
                                     )
                                     Text(
                                         text = project.packageName,
                                         fontFamily = FontFamily.Monospace,
-                                        color = ZentrixCyan,
+                                        color = TextSecondary,
                                         fontSize = 11.sp
                                     )
                                     Text(
-                                        text = "${project.category} • ${project.environment}",
+                                        text = "ID: ${project.id} • ${project.environment}",
                                         color = TextMuted,
                                         fontSize = 10.sp
                                     )
@@ -322,7 +234,7 @@ fun TopConsoleBar(
                                     Icon(
                                         imageVector = Icons.Default.CheckCircle,
                                         contentDescription = "Selected",
-                                        tint = ZentrixCyan,
+                                        tint = ButtonBlue,
                                         modifier = Modifier.size(20.dp)
                                     )
                                 }
@@ -332,8 +244,11 @@ fun TopConsoleBar(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showProjectDropdown = false }) {
-                    Text("Close", color = ZentrixCyan)
+                Button(
+                    onClick = { showProjectDropdown = false },
+                    colors = ButtonDefaults.buttonColors(containerColor = ButtonBlue)
+                ) {
+                    Text("Done")
                 }
             }
         )

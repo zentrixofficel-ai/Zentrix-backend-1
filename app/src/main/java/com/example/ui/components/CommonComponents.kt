@@ -17,8 +17,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -40,10 +38,10 @@ fun StatusBadge(
     modifier: Modifier = Modifier
 ) {
     Surface(
-        color = color.copy(alpha = 0.15f),
+        color = color.copy(alpha = 0.12f),
         contentColor = color,
         shape = RoundedCornerShape(6.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, color.copy(alpha = 0.35f)),
+        border = androidx.compose.foundation.BorderStroke(1.dp, color.copy(alpha = 0.4f)),
         modifier = modifier
     ) {
         Row(
@@ -70,14 +68,15 @@ fun StatusBadge(
 @Composable
 fun ConsoleCard(
     modifier: Modifier = Modifier,
-    borderColor: Color = ConsoleCardBorder,
+    borderColor: Color = FirebaseCardBorder,
     content: @Composable ColumnScope.() -> Unit
 ) {
     Card(
         colors = CardDefaults.cardColors(
-            containerColor = ConsoleSurface
+            containerColor = FirebaseSurface
         ),
-        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        shape = RoundedCornerShape(12.dp),
         border = androidx.compose.foundation.BorderStroke(1.dp, borderColor),
         modifier = modifier.fillMaxWidth()
     ) {
@@ -99,8 +98,8 @@ fun CodeBlockView(
         colors = CardDefaults.cardColors(
             containerColor = CodeBackground
         ),
-        shape = RoundedCornerShape(12.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, ConsoleCardBorder),
+        shape = RoundedCornerShape(8.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF334155)),
         modifier = modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
@@ -114,55 +113,62 @@ fun CodeBlockView(
                         modifier = Modifier
                             .size(10.dp)
                             .clip(CircleShape)
-                            .background(ZentrixRed)
+                            .background(ButtonRed)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Box(
                         modifier = Modifier
                             .size(10.dp)
                             .clip(CircleShape)
-                            .background(ZentrixAmber)
+                            .background(ButtonYellow)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Box(
                         modifier = Modifier
                             .size(10.dp)
                             .clip(CircleShape)
-                            .background(ZentrixGreen)
+                            .background(ButtonGreen)
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
                         text = title,
                         style = MaterialTheme.typography.labelMedium,
-                        color = TextSecondary,
+                        color = Color(0xFFCBD5E1),
                         fontWeight = FontWeight.SemiBold
                     )
                 }
 
-                IconButton(
+                // Black / Dark copy action button
+                FilledTonalButton(
                     onClick = onCopy,
-                    modifier = Modifier
-                        .size(36.dp)
-                        .testTag("copy_code_button")
+                    colors = ButtonDefaults.filledTonalButtonColors(
+                        containerColor = ButtonBlack,
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(6.dp),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                    modifier = Modifier.testTag("copy_code_button")
                 ) {
                     Icon(
                         imageVector = Icons.Default.ContentCopy,
                         contentDescription = "Copy code",
-                        tint = ZentrixCyan,
-                        modifier = Modifier.size(18.dp)
+                        tint = ButtonYellow,
+                        modifier = Modifier.size(14.dp)
                     )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Copy", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }
             }
 
             Spacer(modifier = Modifier.height(10.dp))
-            HorizontalDivider(color = ConsoleCardBorder.copy(alpha = 0.5f))
+            HorizontalDivider(color = Color(0xFF334155))
             Spacer(modifier = Modifier.height(10.dp))
 
             Text(
                 text = code,
                 fontFamily = FontFamily.Monospace,
                 fontSize = 12.sp,
-                color = TextPrimary,
+                color = CodeText,
                 lineHeight = 18.sp
             )
         }

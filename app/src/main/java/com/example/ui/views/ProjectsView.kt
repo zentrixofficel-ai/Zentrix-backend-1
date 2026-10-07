@@ -1,9 +1,12 @@
 package com.example.ui.views
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -32,129 +35,211 @@ fun ProjectsView(
     onSelectProject: (String) -> Unit,
     onNavigateTab: (ConsoleTab) -> Unit,
     onCreateProjectClick: () -> Unit,
+    onEditProjectClick: (ProjectEntity) -> Unit,
     onDeleteProject: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var selectedSettingsSubTab by remember { mutableStateOf("General") }
+
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
+            .background(FirebaseBackground)
             .padding(horizontal = 16.dp),
         contentPadding = PaddingValues(top = 16.dp, bottom = 90.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        // Banner Header
+        // Firebase Project Settings Navigation Bar (Exactly like video 0:00 - 0:18)
         item {
-            ConsoleCard(
-                borderColor = ZentrixCyan.copy(alpha = 0.4f)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(46.dp)
-                            .clip(CircleShape)
-                            .background(ZentrixCyan.copy(alpha = 0.2f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.CloudSync,
-                            contentDescription = null,
-                            tint = ZentrixCyan,
-                            modifier = Modifier.size(26.dp)
-                        )
-                    }
+            Column {
+                Text(
+                    text = "Project settings",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary
+                )
 
-                    Spacer(modifier = Modifier.width(12.dp))
-
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Zentrix Multi-App Hub",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = TextPrimary
-                        )
-                        Text(
-                            text = "Centralized backend management cluster for your Android applications",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = TextSecondary,
-                            fontSize = 11.sp
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(14.dp))
-                HorizontalDivider(color = ConsoleCardBorder)
                 Spacer(modifier = Modifier.height(10.dp))
 
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf("General", "Cloud Messaging", "Integration", "Service accounts", "Data privacy", "Users and permissions").forEach { tabName ->
+                        val isSelected = selectedSettingsSubTab == tabName
+                        Surface(
+                            color = if (isSelected) Color(0xFFE8F0FE) else Color.Transparent,
+                            shape = RoundedCornerShape(20.dp),
+                            border = if (isSelected) androidx.compose.foundation.BorderStroke(1.dp, ButtonBlue) else null,
+                            modifier = Modifier.clickable { selectedSettingsSubTab = tabName }
+                        ) {
+                            Text(
+                                text = tabName,
+                                fontSize = 12.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                color = if (isSelected) ButtonBlue else TextSecondary,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // "Your project" Firebase Card (from video 0:00 - 0:18)
+        item {
+            ConsoleCard {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Active Apps: ${projects.size}",
-                        color = ZentrixCyan,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold
+                        text = "Your project",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
                     )
-                    OutlinedButton(
-                        onClick = onCreateProjectClick,
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = ZentrixCyan),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, ZentrixCyan),
+
+                    // Black Action Button: View in Google Cloud
+                    Button(
+                        onClick = { /* External Cloud Link */ },
+                        colors = ButtonDefaults.buttonColors(containerColor = ButtonBlack, contentColor = Color.White),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                    ) {
+                        Icon(Icons.Default.Cloud, contentDescription = null, modifier = Modifier.size(14.dp), tint = ButtonYellow)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("View in Cloud", fontSize = 11.sp)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+                HorizontalDivider(color = FirebaseCardBorder)
+                Spacer(modifier = Modifier.height(12.dp))
+
+                val activeProj = projects.find { it.id == activeProjectId } ?: projects.firstOrNull()
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text("Project name", color = TextMuted, fontSize = 11.sp)
+                        Text(
+                            text = activeProj?.appName ?: "Zentrix ES",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp,
+                            color = TextPrimary
+                        )
+                    }
+
+                    Column {
+                        Text("Project ID", color = TextMuted, fontSize = 11.sp)
+                        Text(
+                            text = activeProj?.id ?: "zentrix-es",
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 13.sp,
+                            color = ButtonBlue
+                        )
+                    }
+
+                    Column {
+                        Text("Environment", color = TextMuted, fontSize = 11.sp)
+                        StatusBadge(
+                            text = activeProj?.environment ?: "Production",
+                            color = ButtonGreen
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text("Support email", color = TextMuted, fontSize = 11.sp)
+                        Text(
+                            text = "zentrixesport@gmail.com",
+                            fontSize = 12.sp,
+                            color = TextSecondary
+                        )
+                    }
+
+                    // Yellow Action Button: Rotate Keys / Settings
+                    Button(
+                        onClick = { onNavigateTab(ConsoleTab.SDK_CONNECT) },
+                        colors = ButtonDefaults.buttonColors(containerColor = ButtonYellow, contentColor = Color(0xFF202124)),
                         shape = RoundedCornerShape(8.dp),
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                     ) {
-                        Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.VpnKey, contentDescription = null, modifier = Modifier.size(14.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Add New App", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Text("SDK Credentials", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
         }
 
-        // Empty state when zero demo data exists
+        // "Your apps" Section Header with BLUE Button: "Add app" (as in video)
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Your apps (${projects.size})",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary
+                )
+
+                // Blue Button: Add App
+                Button(
+                    onClick = onCreateProjectClick,
+                    colors = ButtonDefaults.buttonColors(containerColor = ButtonBlue, contentColor = Color.White),
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                    modifier = Modifier.testTag("add_app_btn")
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Add app", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+
+        // Empty state
         if (projects.isEmpty()) {
             item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 40.dp, horizontal = 16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
+                ConsoleCard {
                     Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Apps,
-                            contentDescription = null,
-                            tint = ZentrixCyan,
-                            modifier = Modifier.size(54.dp)
-                        )
-                        Text(
-                            text = "No Applications Registered Yet",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = TextPrimary
-                        )
-                        Text(
-                            text = "Zero demo data mode is active. Tap below to register your real application with App Name and Package Name.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = TextSecondary,
-                            modifier = Modifier.padding(horizontal = 20.dp),
-                            lineHeight = 16.sp
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
+                        Icon(Icons.Default.LocalFireDepartment, contentDescription = null, tint = ButtonYellow, modifier = Modifier.size(48.dp))
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Text("Get started by adding Firebase to your app", fontWeight = FontWeight.Bold, color = TextPrimary, fontSize = 15.sp)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text("Create your first Android or Web application package.", color = TextMuted, fontSize = 12.sp)
+                        Spacer(modifier = Modifier.height(14.dp))
+
                         Button(
                             onClick = onCreateProjectClick,
-                            colors = ButtonDefaults.buttonColors(containerColor = ZentrixCyan, contentColor = ConsoleBackground),
-                            shape = RoundedCornerShape(10.dp)
+                            colors = ButtonDefaults.buttonColors(containerColor = ButtonBlue),
+                            shape = RoundedCornerShape(8.dp)
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Register Your First App", fontWeight = FontWeight.Bold)
+                            Text("Create Android App")
                         }
                     }
                 }
@@ -165,190 +250,150 @@ fun ProjectsView(
             val isSelected = project.id == activeProjectId
 
             ConsoleCard(
-                borderColor = if (isSelected) ZentrixCyan else ConsoleCardBorder
+                borderColor = if (isSelected) ButtonBlue else FirebaseCardBorder
             ) {
-                // Top Row: Category + Publish Status badge + Environment
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFE8F0FE)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Android,
+                                contentDescription = null,
+                                tint = ButtonBlue,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(10.dp))
+
+                        Column {
+                            Text(
+                                text = project.appName,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = TextPrimary
+                            )
+                            Text(
+                                text = project.packageName,
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 12.sp,
+                                color = ButtonBlue
+                            )
+                        }
+                    }
+
+                    // Green Active badge
+                    StatusBadge(text = "LIVE", color = ButtonGreen)
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+                HorizontalDivider(color = FirebaseCardBorder)
+                Spacer(modifier = Modifier.height(8.dp))
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    StatusBadge(
-                        text = project.category,
-                        color = ZentrixCyan
-                    )
-
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        StatusBadge(
-                            text = project.environment,
-                            color = if (project.environment == "Production") ZentrixGreen else ZentrixAmber
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // App Name & Package Name
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.Top,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = project.appName,
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = if (isSelected) ZentrixCyan else TextPrimary
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "Package: ${project.packageName}",
-                            fontFamily = FontFamily.Monospace,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = ZentrixCyan,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-
-                    if (isSelected) {
-                        Surface(
-                            color = ZentrixCyan.copy(alpha = 0.2f),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text(
-                                text = "ACTIVE",
-                                color = ZentrixCyan,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Black,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
-                            )
-                        }
-                    }
-                }
-
-                if (project.description.isNotBlank()) {
-                    Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = project.description,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = TextSecondary,
-                        fontSize = 12.sp,
-                        lineHeight = 16.sp
+                        text = "App ID: 1:86138678855:android:${project.id.take(8)}",
+                        fontFamily = FontFamily.Monospace,
+                        color = TextMuted,
+                        fontSize = 10.sp
                     )
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Metadata Details Strip
-                Surface(
-                    color = ConsoleSurfaceVariant,
-                    shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceAround,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(text = "Version", color = TextMuted, fontSize = 10.sp)
-                            Text(
-                                text = "v${project.versionName}",
-                                color = TextPrimary,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp
-                            )
-                        }
-                        VerticalDivider(
-                            modifier = Modifier.height(24.dp),
-                            color = ConsoleCardBorder
-                        )
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(text = "Project ID", color = TextMuted, fontSize = 10.sp)
-                            Text(
-                                text = project.id,
-                                fontFamily = FontFamily.Monospace,
-                                color = ZentrixCyan,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 11.sp
-                            )
-                        }
-                        VerticalDivider(
-                            modifier = Modifier.height(24.dp),
-                            color = ConsoleCardBorder
-                        )
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(text = "Status", color = TextMuted, fontSize = 10.sp)
-                            Text(
-                                text = project.publishStatus,
-                                color = TextSecondary,
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 11.sp
-                            )
-                        }
-                    }
+                    Text(
+                        text = "Version: ${project.versionName}",
+                        color = TextSecondary,
+                        fontSize = 11.sp
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Action buttons row
+                // The 5 Colored Action Buttons: Yellow, Black, Red, Blue, Green
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    // BLUE Button: Connect SDK
                     Button(
                         onClick = {
                             onSelectProject(project.id)
                             onNavigateTab(ConsoleTab.SDK_CONNECT)
                         },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = ZentrixCyan,
-                            contentColor = ConsoleBackground
-                        ),
-                        shape = RoundedCornerShape(10.dp),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-                        modifier = Modifier
-                            .weight(1.3f)
-                            .testTag("connect_sdk_btn_${project.id}")
+                        colors = ButtonDefaults.buttonColors(containerColor = ButtonBlue, contentColor = Color.White),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                        modifier = Modifier.weight(1.2f)
                     ) {
-                        Icon(imageVector = Icons.Default.Key, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Code, contentDescription = null, modifier = Modifier.size(14.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text(text = "Connect SDK", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Text("SDK Config", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
 
-                    OutlinedButton(
+                    // GREEN Button: Database
+                    Button(
                         onClick = {
                             onSelectProject(project.id)
                             onNavigateTab(ConsoleTab.DATABASE)
                         },
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, ConsoleCardBorder),
-                        shape = RoundedCornerShape(10.dp),
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = ButtonGreen, contentColor = Color.White),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
                         modifier = Modifier.weight(1f)
                     ) {
-                        Icon(imageVector = Icons.Default.Storage, contentDescription = null, modifier = Modifier.size(14.dp))
+                        Icon(Icons.Default.Storage, contentDescription = null, modifier = Modifier.size(14.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text(text = "Database", fontSize = 11.sp)
+                        Text("Database", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
 
-                    OutlinedButton(
+                    // YELLOW Button: Vault
+                    Button(
                         onClick = {
                             onSelectProject(project.id)
                             onNavigateTab(ConsoleTab.VAULT)
                         },
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = ZentrixAmber),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, ZentrixAmber.copy(alpha = 0.5f)),
-                        shape = RoundedCornerShape(10.dp),
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
-                        modifier = Modifier.weight(1f)
+                        colors = ButtonDefaults.buttonColors(containerColor = ButtonYellow, contentColor = Color(0xFF202124)),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
+                        modifier = Modifier.weight(0.9f)
                     ) {
-                        Icon(imageVector = Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(14.dp))
+                        Icon(Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(14.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text(text = "Vault", fontSize = 11.sp)
+                        Text("Vault", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
+
+                    // BLACK Button: Edit / Update App
+                    Button(
+                        onClick = { onEditProjectClick(project) },
+                        colors = ButtonDefaults.buttonColors(containerColor = ButtonBlack, contentColor = Color.White),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
+                        modifier = Modifier.weight(0.85f)
+                    ) {
+                        Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Edit", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
+
+                    // RED Button: Delete
+                    Button(
+                        onClick = { onDeleteProject(project.id) },
+                        colors = ButtonDefaults.buttonColors(containerColor = ButtonRed, contentColor = Color.White),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
+                        modifier = Modifier.weight(0.8f)
+                    ) {
+                        Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(14.dp))
                     }
                 }
             }

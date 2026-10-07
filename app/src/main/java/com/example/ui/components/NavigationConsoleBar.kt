@@ -11,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -26,9 +27,9 @@ fun NavigationConsoleBar(
     modifier: Modifier = Modifier
 ) {
     Surface(
-        color = ConsoleSurface,
-        border = androidx.compose.foundation.BorderStroke(1.dp, ConsoleCardBorder),
-        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+        color = FirebaseSurface,
+        border = androidx.compose.foundation.BorderStroke(1.dp, FirebaseCardBorder),
+        shadowElevation = 4.dp,
         modifier = modifier
             .fillMaxWidth()
             .windowInsetsPadding(WindowInsets.navigationBars)
@@ -39,56 +40,49 @@ fun NavigationConsoleBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .horizontalScroll(scrollState)
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                .padding(horizontal = 10.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             ConsoleTab.values().forEach { tab ->
                 val isSelected = tab == currentTab
                 val icon: ImageVector = when (tab) {
-                    ConsoleTab.PROJECTS -> Icons.Default.Apps
+                    ConsoleTab.PROJECTS -> Icons.Default.Settings
                     ConsoleTab.SDK_CONNECT -> Icons.Default.Code
                     ConsoleTab.VAULT -> Icons.Default.VpnKey
-                    ConsoleTab.AUTH -> Icons.Default.Group
+                    ConsoleTab.AUTH -> Icons.Default.PeopleAlt
                     ConsoleTab.DATABASE -> Icons.Default.Storage
                     ConsoleTab.SECURITY -> Icons.Default.Shield
                     ConsoleTab.DATA_EXPLORER -> Icons.Default.ManageSearch
-                    ConsoleTab.ANALYTICS -> Icons.Default.Insights
-                    ConsoleTab.SETTINGS -> Icons.Default.Settings
+                    ConsoleTab.ANALYTICS -> Icons.Default.Analytics
+                    ConsoleTab.SETTINGS -> Icons.Default.Tune
                 }
 
                 Surface(
-                    color = if (isSelected) ZentrixCyan.copy(alpha = 0.18f) else ConsoleSurfaceVariant,
-                    shape = RoundedCornerShape(12.dp),
-                    border = if (isSelected) androidx.compose.foundation.BorderStroke(1.5.dp, ZentrixCyan) else null,
+                    color = if (isSelected) Color(0xFFE8F0FE) else Color.Transparent,
+                    shape = RoundedCornerShape(20.dp),
+                    border = if (isSelected) androidx.compose.foundation.BorderStroke(1.5.dp, ButtonBlue) else null,
                     modifier = Modifier
                         .clickable { onTabSelected(tab) }
                         .testTag("nav_tab_${tab.name.lowercase()}")
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
                             imageVector = icon,
                             contentDescription = tab.title,
-                            tint = if (isSelected) ZentrixCyan else TextSecondary,
+                            tint = if (isSelected) ButtonBlue else TextSecondary,
                             modifier = Modifier.size(18.dp)
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Column {
-                            Text(
-                                text = tab.title,
-                                color = if (isSelected) ZentrixCyan else TextPrimary,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                fontSize = 12.sp
-                            )
-                            Text(
-                                text = tab.subtitle,
-                                color = if (isSelected) ZentrixCyan.copy(alpha = 0.8f) else TextMuted,
-                                fontSize = 10.sp
-                            )
-                        }
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = tab.title,
+                            color = if (isSelected) ButtonBlue else TextPrimary,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                            fontSize = 12.sp
+                        )
                     }
                 }
             }

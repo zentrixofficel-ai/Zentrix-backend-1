@@ -52,6 +52,7 @@ fun ZentrixConsoleApp(viewModel: ZentrixViewModel) {
     val toastMessage by viewModel.toastMessage.collectAsStateWithLifecycle()
 
     val showCreateProjectDialog by viewModel.showCreateProjectDialog.collectAsStateWithLifecycle()
+    val projectToEdit by viewModel.projectToEdit.collectAsStateWithLifecycle()
     val showAddSecretDialog by viewModel.showAddSecretDialog.collectAsStateWithLifecycle()
     val showAddUserDialog by viewModel.showAddUserDialog.collectAsStateWithLifecycle()
     val showAddDocDialog by viewModel.showAddDocDialog.collectAsStateWithLifecycle()
@@ -105,6 +106,7 @@ fun ZentrixConsoleApp(viewModel: ZentrixViewModel) {
                         onSelectProject = { viewModel.selectProject(it) },
                         onNavigateTab = { viewModel.setTab(it) },
                         onCreateProjectClick = { viewModel.showCreateProjectDialog.value = true },
+                        onEditProjectClick = { viewModel.projectToEdit.value = it },
                         onDeleteProject = { viewModel.deleteProject(it) }
                     )
                 }
@@ -205,6 +207,16 @@ fun ZentrixConsoleApp(viewModel: ZentrixViewModel) {
             onDismiss = { viewModel.showCreateProjectDialog.value = false },
             onCreate = { name, appName, packageName, versionName, desc, cat, status, env ->
                 viewModel.createProject(name, appName, packageName, versionName, desc, cat, status, env)
+            }
+        )
+    }
+
+    projectToEdit?.let { project ->
+        EditProjectDialog(
+            project = project,
+            onDismiss = { viewModel.projectToEdit.value = null },
+            onSave = { updated ->
+                viewModel.updateProject(updated)
             }
         )
     }

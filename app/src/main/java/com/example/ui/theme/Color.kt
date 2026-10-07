@@ -2,24 +2,43 @@ package com.example.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Obsidian & Cyber Dark Base
-val ConsoleBackground = Color(0xFF090D16)
-val ConsoleSurface = Color(0xFF111827)
-val ConsoleSurfaceVariant = Color(0xFF1B2336)
-val ConsoleCardBorder = Color(0xFF26334D)
+// Authentic Firebase Console Light Theme (Clean White & High Contrast)
+val FirebaseBackground = Color(0xFFF8F9FA) // Google light neutral background
+val FirebaseSurface = Color(0xFFFFFFFF)    // Pure white cards & containers
+val FirebaseSurfaceVariant = Color(0xFFF1F3F4)
+val FirebaseCardBorder = Color(0xFFDADCE0) // Crisp Google/Firebase border
+val FirebaseSidebar = Color(0xFF202124)    // Charcoal navigation drawer
 
-// Neon & Brand Accents
-val ZentrixCyan = Color(0xFF00F0FF)
-val ZentrixPurple = Color(0xFF8B5CF6)
-val ZentrixViolet = Color(0xFFA855F7)
-val ZentrixIndigo = Color(0xFF6366F1)
-val ZentrixGreen = Color(0xFF10B981)
-val ZentrixAmber = Color(0xFFF59E0B)
-val ZentrixRed = Color(0xFFEF4444)
-val ZentrixBlue = Color(0xFF38BDF8)
+// Requested Colored Buttons (Yellow, Black, Red, Blue, Green)
+val ButtonYellow = Color(0xFFFFA000) // Firebase Amber / Yellow
+val ButtonYellowHover = Color(0xFFFFB300)
+val ButtonBlack = Color(0xFF202124)  // Google / Firebase Black
+val ButtonRed = Color(0xFFEA4335)    // Google Red (Delete / Block)
+val ButtonBlue = Color(0xFF1A73E8)   // Google Firebase Primary Blue (Add / Save / Action)
+val ButtonGreen = Color(0xFF34A853)  // Google Green (Active / Unblock / Success)
 
-// Text & Neutral Shades
-val TextPrimary = Color(0xFFF8FAFC)
-val TextSecondary = Color(0xFF94A3B8)
-val TextMuted = Color(0xFF64748B)
-val CodeBackground = Color(0xFF050811)
+// Classic Firebase brand colors
+val FirebaseFlameYellow = Color(0xFFFFCA28)
+val FirebaseFlameAmber = Color(0xFFFFA000)
+val FirebaseFlameRed = Color(0xFFF57C00)
+
+// Text Colors on White Surface
+val TextPrimary = Color(0xFF202124)   // High-contrast Google text
+val TextSecondary = Color(0xFF5F6368) // Subtitle / description gray
+val TextMuted = Color(0xFF80868B)     // Helper text gray
+val CodeBackground = Color(0xFF202634) // High-contrast dark container for code blocks
+val CodeText = Color(0xFFF8FAFC)
+
+// Compatibility aliases
+val ConsoleBackground = FirebaseBackground
+val ConsoleSurface = FirebaseSurface
+val ConsoleSurfaceVariant = FirebaseSurfaceVariant
+val ConsoleCardBorder = FirebaseCardBorder
+val ZentrixCyan = ButtonBlue
+val ZentrixPurple = ButtonBlack
+val ZentrixViolet = ButtonBlack
+val ZentrixIndigo = ButtonBlue
+val ZentrixGreen = ButtonGreen
+val ZentrixAmber = ButtonYellow
+val ZentrixRed = ButtonRed
+val ZentrixBlue = ButtonBlue

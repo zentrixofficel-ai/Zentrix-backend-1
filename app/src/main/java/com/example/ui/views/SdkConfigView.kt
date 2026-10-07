@@ -1,8 +1,10 @@
 package com.example.ui.views
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -34,20 +36,17 @@ fun SdkConfigView(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    var selectedLanguage by remember { mutableStateOf("Kotlin (Android)") }
+    var selectedSetupMode by remember { mutableStateOf("npm") } // npm, CDN, Config (like video 0:15)
     var keyToRotateConfirm by remember { mutableStateOf<KeyType?>(null) }
 
     if (project == null) {
         Box(
-            modifier = modifier.fillMaxSize(),
+            modifier = modifier
+                .fillMaxSize()
+                .background(FirebaseBackground),
             contentAlignment = Alignment.Center
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(Icons.Default.Apps, contentDescription = null, tint = TextMuted, modifier = Modifier.size(48.dp))
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("No Active App Selected", color = TextPrimary, fontWeight = FontWeight.Bold)
-                Text("Select or register an application in the Projects tab to view SDK credentials.", color = TextMuted, fontSize = 12.sp)
-            }
+            Text("Select an app to view Firebase SDK setup & configuration.", color = TextSecondary)
         }
         return
     }
@@ -55,31 +54,30 @@ fun SdkConfigView(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
+            .background(FirebaseBackground)
             .padding(horizontal = 16.dp),
         contentPadding = PaddingValues(top = 16.dp, bottom = 90.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Highlight Header
+        // Firebase Header
         item {
-            ConsoleCard(
-                borderColor = ZentrixCyan.copy(alpha = 0.5f)
-            ) {
+            ConsoleCard {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(46.dp)
+                            .size(42.dp)
                             .clip(CircleShape)
-                            .background(ZentrixPurple.copy(alpha = 0.25f)),
+                            .background(ButtonYellow.copy(alpha = 0.15f)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Terminal,
+                            imageVector = Icons.Default.LocalFireDepartment,
                             contentDescription = null,
-                            tint = ZentrixCyan,
-                            modifier = Modifier.size(26.dp)
+                            tint = ButtonYellow,
+                            modifier = Modifier.size(24.dp)
                         )
                     }
 
@@ -87,359 +85,474 @@ fun SdkConfigView(
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Zentrix SDK & Connection Hub",
+                            text = "SDK setup and configuration",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = TextPrimary
                         )
                         Text(
-                            text = "App: ${project.appName} • pkg: ${project.packageName}",
+                            text = "App: ${project.appName} • Package: ${project.packageName}",
                             fontFamily = FontFamily.Monospace,
                             style = MaterialTheme.typography.bodySmall,
-                            color = ZentrixCyan,
+                            color = ButtonBlue,
                             fontSize = 11.sp
                         )
+                    }
+
+                    StatusBadge(text = "ONLINE", color = ButtonGreen)
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+                HorizontalDivider(color = FirebaseCardBorder)
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Radio selector for npm / CDN / Config / Android Kotlin / GitHub CI/CD (Exact copy of video 0:15)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    listOf("npm", "CDN", "Config", "Android Kotlin", "GitHub CI/CD").forEach { mode ->
+                        val isSelected = selectedSetupMode == mode
+                        Surface(
+                            color = if (isSelected) Color(0xFFE8F0FE) else FirebaseSurfaceVariant,
+                            shape = RoundedCornerShape(20.dp),
+                            border = if (isSelected) androidx.compose.foundation.BorderStroke(1.5.dp, ButtonBlue) else null,
+                            onClick = { selectedSetupMode = mode }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected = isSelected,
+                                    onClick = { selectedSetupMode = mode },
+                                    colors = RadioButtonDefaults.colors(selectedColor = ButtonBlue),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = mode,
+                                    fontSize = 12.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                    color = if (isSelected) ButtonBlue else TextPrimary
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Firebase Credentials Cards with Yellow, Black, Red, Blue, Green buttons
+        item {
+            Text(
+                text = "Credentials & Authorization Keys",
+                style = MaterialTheme.typography.titleSmall,
+                color = TextPrimary,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        // Admin Key Card
+        item {
+            ConsoleCard {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Admin Master Secret Key", fontWeight = FontWeight.Bold, color = TextPrimary)
+                        Text("Full root access for vault, dropping database, and cloud tasks", color = TextSecondary, fontSize = 11.sp)
+                    }
+                    StatusBadge(text = "ADMIN", color = ButtonRed)
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Surface(
+                    color = FirebaseSurfaceVariant,
+                    shape = RoundedCornerShape(8.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, FirebaseCardBorder),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = project.adminKey,
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 12.sp,
+                            color = ButtonBlack,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.weight(1f)
+                        )
+                        IconButton(
+                            onClick = {
+                                copyToClipboard(context, "Admin Key", project.adminKey) {
+                                    onShowToast("Admin Key copied")
+                                }
+                            },
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(Icons.Default.ContentCopy, contentDescription = null, tint = ButtonBlue, modifier = Modifier.size(16.dp))
+                        }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
-                Text(
-                    text = "Similar to Firebase SDK initialization, Zentrix generates distinct keys for Admin, Staff/Moderators, and Client applications with custom package bindings.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary,
-                    lineHeight = 16.sp
-                )
-            }
-        }
 
-        // Section: 3 Tier Security Keys
-        item {
-            Text(
-                text = "1. Security Credentials & Access Keys",
-                style = MaterialTheme.typography.titleSmall,
-                color = TextPrimary,
-                fontWeight = FontWeight.Bold
-            )
-        }
-
-        // 1. Admin Master Key
-        item {
-            KeyCard(
-                title = "Admin Master Secret Key",
-                subTitle = "Full root access for vault management, DB drop, and keys",
-                keyString = project.adminKey,
-                badgeText = "SUPER_ADMIN",
-                badgeColor = ZentrixRed,
-                scopeDescription = "Unrestricted access. Keep strictly on server backend. Never package into public client APKs.",
-                onCopy = {
-                    copyToClipboard(context, "Admin Key", project.adminKey) {
-                        onShowToast("Admin Key copied to clipboard")
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    // Yellow button: Rotate
+                    Button(
+                        onClick = { keyToRotateConfirm = KeyType.ADMIN },
+                        colors = ButtonDefaults.buttonColors(containerColor = ButtonYellow, contentColor = Color(0xFF202124)),
+                        shape = RoundedCornerShape(6.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                    ) {
+                        Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Rotate Key", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
-                },
-                onRotate = { keyToRotateConfirm = KeyType.ADMIN }
-            )
-        }
-
-        // 2. Staff Key
-        item {
-            KeyCard(
-                title = "Staff & Moderator Key",
-                subTitle = "For operators, moderators, tournament ref, and support staff",
-                keyString = project.staffKey,
-                badgeText = "STAFF_AUTHORIZED",
-                badgeColor = ZentrixAmber,
-                scopeDescription = "Permitted for tournament slot allocation, room creation, and user support. Vault secrets are blocked.",
-                onCopy = {
-                    copyToClipboard(context, "Staff Key", project.staffKey) {
-                        onShowToast("Staff Key copied to clipboard")
-                    }
-                },
-                onRotate = { keyToRotateConfirm = KeyType.STAFF }
-            )
-        }
-
-        // 3. Client Public Key
-        item {
-            KeyCard(
-                title = "Client App Public Key",
-                subTitle = "Safe for client Android APK and frontend web integration",
-                keyString = project.clientPublicKey,
-                badgeText = "PUBLIC_CLIENT",
-                badgeColor = ZentrixGreen,
-                scopeDescription = "Bound to package '${project.packageName}'. Restricted by Zero-Trust security rules.",
-                onCopy = {
-                    copyToClipboard(context, "Client Key", project.clientPublicKey) {
-                        onShowToast("Client Public Key copied to clipboard")
-                    }
-                },
-                onRotate = { keyToRotateConfirm = KeyType.CLIENT }
-            )
-        }
-
-        // Section: Code Integration Snippets
-        item {
-            Spacer(modifier = Modifier.height(10.dp))
-            Text(
-                text = "2. Client SDK Initialization Snippet",
-                style = MaterialTheme.typography.titleSmall,
-                color = TextPrimary,
-                fontWeight = FontWeight.Bold
-            )
-        }
-
-        // Language Selectors
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                listOf("Kotlin (Android)", "JavaScript", "Flutter (Dart)", "REST (cURL)").forEach { lang ->
-                    val isSelected = lang == selectedLanguage
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = { selectedLanguage = lang },
-                        label = { Text(lang, fontSize = 11.sp, fontWeight = FontWeight.Bold) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = ZentrixCyan,
-                            selectedLabelColor = ConsoleBackground,
-                            containerColor = ConsoleSurfaceVariant,
-                            labelColor = TextSecondary
-                        )
-                    )
                 }
             }
         }
 
-        // Snippet Box
+        // Staff Key Card
         item {
-            val codeSnippet = when (selectedLanguage) {
-                "Kotlin (Android)" -> """
-// Android Kotlin Client Setup (in Application or Activity)
-// Package: ${project.packageName}
-package ${project.packageName}
+            ConsoleCard {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Staff / Operator Token", fontWeight = FontWeight.Bold, color = TextPrimary)
+                        Text("Scoped for tournament refereeing, room creation, and user management", color = TextSecondary, fontSize = 11.sp)
+                    }
+                    StatusBadge(text = "STAFF", color = ButtonYellow)
+                }
 
-import io.zentrix.sdk.ZentrixClient
-import io.zentrix.sdk.ZentrixOptions
+                Spacer(modifier = Modifier.height(10.dp))
 
-class MainApplication : android.app.Application() {
-    override fun onCreate() {
-        super.onCreate()
-        
-        // Initialize Zentrix Cloud Client
-        val zentrix = ZentrixClient.Builder()
-            .setPackageName("${project.packageName}")
-            .setProjectId("${project.id}")
-            .setPublicKey("${project.clientPublicKey}")
-            .setStaffToken("${project.staffKey}") // Provide only in Admin/Staff portal
-            .setEndpoint("https://api.zentrixcloud.io/v1")
-            .enableOfflinePersistence(true)
-            .build()
-    }
-}
+                Surface(
+                    color = FirebaseSurfaceVariant,
+                    shape = RoundedCornerShape(8.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, FirebaseCardBorder),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = project.staffKey,
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 12.sp,
+                            color = ButtonBlack,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.weight(1f)
+                        )
+                        IconButton(
+                            onClick = {
+                                copyToClipboard(context, "Staff Key", project.staffKey) {
+                                    onShowToast("Staff Key copied")
+                                }
+                            },
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(Icons.Default.ContentCopy, contentDescription = null, tint = ButtonBlue, modifier = Modifier.size(16.dp))
+                        }
+                    }
+                }
+            }
+        }
+
+        // Client Public Key
+        item {
+            ConsoleCard {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Web / Mobile Client API Key", fontWeight = FontWeight.Bold, color = TextPrimary)
+                        Text("Safe for inclusion in public client applications", color = TextSecondary, fontSize = 11.sp)
+                    }
+                    StatusBadge(text = "CLIENT", color = ButtonGreen)
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Surface(
+                    color = FirebaseSurfaceVariant,
+                    shape = RoundedCornerShape(8.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, FirebaseCardBorder),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = project.clientPublicKey,
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 12.sp,
+                            color = ButtonBlack,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.weight(1f)
+                        )
+                        IconButton(
+                            onClick = {
+                                copyToClipboard(context, "Client Key", project.clientPublicKey) {
+                                    onShowToast("Client Key copied")
+                                }
+                            },
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(Icons.Default.ContentCopy, contentDescription = null, tint = ButtonBlue, modifier = Modifier.size(16.dp))
+                        }
+                    }
+                }
+            }
+        }
+
+        // Code Snippet Box (Exactly like video 0:15)
+        item {
+            val codeSnippet = when (selectedSetupMode) {
+                "CDN" -> """
+<!-- Firebase SDK from CDN -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-analytics.js";
+
+  const firebaseConfig = {
+    apiKey: "${project.clientPublicKey}",
+    authDomain: "${project.id}.firebaseapp.com",
+    projectId: "${project.id}",
+    storageBucket: "${project.id}.appspot.com",
+    messagingSenderId: "86138678855",
+    appId: "1:86138678855:web:${project.id.take(8)}"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+</script>
 """.trimIndent()
 
-                "JavaScript" -> """
-// Zentrix Cloud SDK Initialization (Node.js or Web)
-import { initializeZentrix } from '@zentrix/cloud-sdk';
-
-const zentrix = initializeZentrix({
-  packageName: "${project.packageName}",
-  projectId: "${project.id}",
+                "Config" -> """
+// Firebase Configuration Object
+const firebaseConfig = {
   apiKey: "${project.clientPublicKey}",
-  staffKey: "${project.staffKey}",
-  endpoint: "https://api.zentrixcloud.io/v1",
-  environment: "${project.environment.lowercase()}",
-  auth: {
-    providers: ["gmail", "email_password", "phone_otp"]
-  }
-});
-
-// Fetch documents from database:
-const documents = await zentrix.db.collection('tournaments').get();
-console.log("Connected to Zentrix cluster:", zentrix.status);
+  authDomain: "${project.id}.firebaseapp.com",
+  projectId: "${project.id}",
+  storageBucket: "${project.id}.appspot.com",
+  messagingSenderId: "86138678855",
+  appId: "1:86138678855:web:${project.id.take(8)}"
+};
+export default firebaseConfig;
 """.trimIndent()
 
-                "Flutter (Dart)" -> """
-// Flutter / Dart Integration
-import 'package:zentrix_flutter/zentrix_flutter.dart';
+                "Android Kotlin" -> """
+// Android Kotlin Client Setup (${project.packageName})
+import io.zentrix.sdk.ZentrixClient
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  
-  final zentrix = await Zentrix.initialize(
-    packageName: '${project.packageName}',
-    projectId: '${project.id}',
-    apiKey: '${project.clientPublicKey}',
-    staffToken: '${project.staffKey}',
-    options: ZentrixOptions(
-      region: 'ap-south-1',
-      enableSecurityRules: true,
-    ),
-  );
-  
-  runApp(const MyApp());
-}
+val firebase = ZentrixClient.Builder()
+    .setPackageName("${project.packageName}")
+    .setProjectId("${project.id}")
+    .setApiKey("${project.clientPublicKey}")
+    .setEndpoint("https://${project.id}.firebaseio.com")
+    .build()
+""".trimIndent()
+
+                "GitHub CI/CD" -> """
+# .github/workflows/android-build-deploy.yml
+name: Zentrix CI/CD Android & Backend
+
+on:
+  push:
+    branches: [ main, release ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    name: Build & Test Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Make Gradle Wrapper Executable
+        run: chmod +x gradlew || true
+
+      - name: Inject Project Secrets & Environment
+        env:
+          PROJECT_ID: "${project.id}"
+          CLIENT_KEY: "${project.clientPublicKey}"
+          ADMIN_KEY: "${project.adminKey}"
+          PACKAGE_NAME: "${project.packageName}"
+        run: |
+          mkdir -p app/src/main/assets
+          cat <<EOF > app/src/main/assets/zentrix-services.json
+          {
+            "project_info": {
+              "project_id": "${project.id}",
+              "project_number": "86138678855",
+              "package_name": "${project.packageName}"
+            },
+            "client": [
+              {
+                "client_info": {
+                  "mobilesdk_app_id": "1:86138678855:android:${project.id.take(8)}"
+                },
+                "api_key": [
+                  { "current_key": "${project.clientPublicKey}" }
+                ]
+              }
+            ]
+          }
+          EOF
+
+      - name: Assemble Debug APK
+        run: ./gradlew assembleDebug --stacktrace || gradle assembleDebug
+
+      - name: Run Unit Tests
+        run: ./gradlew testDebugUnitTest || gradle testDebugUnitTest
+
+      - name: Archive APK Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${project.appName.replace(" ", "_")}-release-apk
+          path: app/build/outputs/apk/debug/*.apk
+
+  deploy-rules:
+    name: Sync Backend Security Rules
+    needs: build-android
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy Rules to Zentrix Cloud Cluster
+        env:
+          ZENTRIX_ADMIN_KEY: "${project.adminKey}"
+        run: |
+          echo "Deploying zero-trust rules for ${project.id}..."
+          curl -X POST "https://api.zentrixcloud.io/v1/projects/${project.id}/rules" \
+            -H "Authorization: Bearer ${project.adminKey}" \
+            -H "Content-Type: application/json" \
+            -d '{"status": "DEPLOYED", "env": "${project.environment}"}' || true
 """.trimIndent()
 
                 else -> """
-# cURL REST API Example
-curl -X GET "https://api.zentrixcloud.io/v1/projects/${project.id}/data" \
-  -H "X-Zentrix-Package: ${project.packageName}" \
-  -H "Authorization: Bearer ${project.staffKey}" \
-  -H "X-Zentrix-Client-Key: ${project.clientPublicKey}" \
-  -H "Content-Type: application/json"
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "${project.clientPublicKey}",
+  authDomain: "${project.id}.firebaseapp.com",
+  projectId: "${project.id}",
+  storageBucket: "${project.id}.appspot.com",
+  messagingSenderId: "86138678855",
+  appId: "1:86138678855:web:${project.id.take(8)}"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
 """.trimIndent()
             }
 
             CodeBlockView(
                 code = codeSnippet,
-                title = "$selectedLanguage • ${project.appName}",
+                title = "$selectedSetupMode • ${project.appName}",
                 onCopy = {
-                    copyToClipboard(context, "SDK Code", codeSnippet) {
-                        onShowToast("$selectedLanguage code copied to clipboard")
+                    copyToClipboard(context, "Firebase Code", codeSnippet) {
+                        onShowToast("Firebase SDK code snippet copied!")
                     }
                 }
             )
         }
+
+        // Blue Button: Download google-services.json & Black Button: View Docs
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Button(
+                    onClick = {
+                        onShowToast("google-services.json generated for ${project.packageName}")
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = ButtonBlue, contentColor = Color.White),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Download config", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                }
+
+                Button(
+                    onClick = {
+                        onShowToast("Opening Firebase docs")
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = ButtonBlack, contentColor = Color.White),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Default.MenuBook, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Documentation", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                }
+            }
+        }
     }
 
-    // Key Rotation Confirmation Dialog
     if (keyToRotateConfirm != null) {
         val keyType = keyToRotateConfirm!!
         AlertDialog(
             onDismissRequest = { keyToRotateConfirm = null },
-            containerColor = ConsoleSurface,
-            title = {
-                Text(
-                    text = "Rotate ${keyType.name} Key?",
-                    color = TextPrimary,
-                    fontWeight = FontWeight.Bold
-                )
-            },
-            text = {
-                Text(
-                    text = "Rotating this credential will immediately invalidate the previous key. Any apps using the old key must be updated. Confirm rotation?",
-                    color = TextSecondary,
-                    fontSize = 13.sp
-                )
-            },
+            containerColor = FirebaseSurface,
+            title = { Text("Rotate ${keyType.name} Key?", fontWeight = FontWeight.Bold, color = TextPrimary) },
+            text = { Text("Are you sure you want to generate a new key? The old key will immediately stop working.", color = TextSecondary) },
             confirmButton = {
                 Button(
                     onClick = {
                         onRotateKey(project.id, keyType)
                         keyToRotateConfirm = null
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = ZentrixRed)
+                    colors = ButtonDefaults.buttonColors(containerColor = ButtonRed)
                 ) {
                     Text("Rotate Key")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { keyToRotateConfirm = null }) {
-                    Text("Cancel", color = TextSecondary)
-                }
+                TextButton(onClick = { keyToRotateConfirm = null }) { Text("Cancel") }
             }
         )
-    }
-}
-
-@Composable
-private fun KeyCard(
-    title: String,
-    subTitle: String,
-    keyString: String,
-    badgeText: String,
-    badgeColor: Color,
-    scopeDescription: String,
-    onCopy: () -> Unit,
-    onRotate: () -> Unit
-) {
-    ConsoleCard(
-        borderColor = badgeColor.copy(alpha = 0.35f)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary
-                )
-                Text(
-                    text = subTitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary,
-                    fontSize = 11.sp
-                )
-            }
-            StatusBadge(text = badgeText, color = badgeColor)
-        }
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        // Monospace key bar
-        Surface(
-            color = CodeBackground,
-            shape = RoundedCornerShape(8.dp),
-            border = androidx.compose.foundation.BorderStroke(1.dp, ConsoleCardBorder),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = keyString,
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 12.sp,
-                    color = ZentrixCyan,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.weight(1f)
-                )
-                IconButton(
-                    onClick = onCopy,
-                    modifier = Modifier.size(32.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ContentCopy,
-                        contentDescription = "Copy Key",
-                        tint = ZentrixCyan,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = scopeDescription,
-            style = MaterialTheme.typography.bodySmall,
-            color = TextMuted,
-            fontSize = 11.sp,
-            lineHeight = 15.sp
-        )
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End
-        ) {
-            TextButton(
-                onClick = onRotate,
-                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
-            ) {
-                Icon(imageVector = Icons.Default.Refresh, contentDescription = null, tint = ZentrixAmber, modifier = Modifier.size(14.dp))
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("Rotate Key", color = ZentrixAmber, fontSize = 11.sp)
-            }
-        }
     }
 }

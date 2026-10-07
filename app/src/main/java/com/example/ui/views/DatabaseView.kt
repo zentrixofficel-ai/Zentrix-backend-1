@@ -1,6 +1,7 @@
 package com.example.ui.views
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -40,6 +41,7 @@ fun DatabaseView(
 ) {
     val context = LocalContext.current
     var docToDelete by remember { mutableStateOf<DataDocumentEntity?>(null) }
+    var selectedDatabaseType by remember { mutableStateOf("Cloud Firestore") } // Firestore or Realtime DB (like video 0:19)
 
     val availableCollections = remember(documents) {
         documents.map { it.collectionName }.distinct()
@@ -54,80 +56,65 @@ fun DatabaseView(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
+            .background(FirebaseBackground)
             .padding(horizontal = 16.dp),
         contentPadding = PaddingValues(top = 16.dp, bottom = 90.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        // Header
+        // Firebase Header
         item {
-            ConsoleCard(
-                borderColor = ZentrixCyan.copy(alpha = 0.4f)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(46.dp)
-                            .clip(CircleShape)
-                            .background(ZentrixCyan.copy(alpha = 0.2f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Storage,
-                            contentDescription = null,
-                            tint = ZentrixCyan,
-                            modifier = Modifier.size(26.dp)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(12.dp))
-
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Cloud Collections & Tables",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = TextPrimary
-                        )
-                        Text(
-                            text = "Firestore / Supabase NoSQL and relational document explorer",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = ZentrixCyan,
-                            fontSize = 12.sp
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-                HorizontalDivider(color = ConsoleCardBorder)
-                Spacer(modifier = Modifier.height(10.dp))
-
+            Column {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = if (activeProjectId.isNotBlank()) "App ID: $activeProjectId" else "Global Database",
-                        color = TextSecondary,
-                        fontSize = 11.sp
+                        text = selectedDatabaseType,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
                     )
 
+                    // Blue Button: Add Document
                     Button(
                         onClick = onAddDocumentClick,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = ZentrixCyan,
-                            contentColor = ConsoleBackground
-                        ),
+                        colors = ButtonDefaults.buttonColors(containerColor = ButtonBlue, contentColor = Color.White),
                         shape = RoundedCornerShape(8.dp),
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                         modifier = Modifier.testTag("add_document_button")
                     ) {
-                        Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Add Document", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Text("Add document", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Database Switcher (Firestore / Realtime Database)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf("Cloud Firestore", "Realtime Database", "Rules", "Indexes", "Usage").forEach { dbTab ->
+                        val isSelected = selectedDatabaseType == dbTab
+                        Surface(
+                            color = if (isSelected) Color(0xFFE8F0FE) else Color.Transparent,
+                            shape = RoundedCornerShape(20.dp),
+                            border = if (isSelected) androidx.compose.foundation.BorderStroke(1.dp, ButtonBlue) else null,
+                            onClick = { selectedDatabaseType = dbTab }
+                        ) {
+                            Text(
+                                text = dbTab,
+                                fontSize = 12.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                color = if (isSelected) ButtonBlue else TextSecondary,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -136,14 +123,9 @@ fun DatabaseView(
         // Collection Selector Chips
         if (availableCollections.isNotEmpty()) {
             item {
-                Column {
-                    Text(
-                        text = "Collections in Database:",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = TextSecondary,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
+                ConsoleCard {
+                    Text("Root Collections:", fontWeight = FontWeight.Bold, color = TextPrimary, fontSize = 12.sp)
+                    Spacer(modifier = Modifier.height(8.dp))
 
                     Row(
                         modifier = Modifier
@@ -153,31 +135,26 @@ fun DatabaseView(
                     ) {
                         availableCollections.forEach { colName ->
                             val isSelected = colName == currentCollection
-                            FilterChip(
-                                selected = isSelected,
-                                onClick = { onSelectCollection(colName) },
-                                leadingIcon = {
-                                    Icon(
-                                        imageVector = Icons.Default.Folder,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(16.dp),
-                                        tint = if (isSelected) ConsoleBackground else ZentrixCyan
-                                    )
-                                },
-                                label = {
+                            Surface(
+                                color = if (isSelected) Color(0xFFE8F0FE) else FirebaseSurfaceVariant,
+                                shape = RoundedCornerShape(8.dp),
+                                border = if (isSelected) androidx.compose.foundation.BorderStroke(1.dp, ButtonBlue) else null,
+                                modifier = Modifier.clickable { onSelectCollection(colName) }
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(Icons.Default.Folder, contentDescription = null, tint = ButtonYellow, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
                                     Text(
                                         text = colName,
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                        fontSize = 12.sp
+                                        fontSize = 12.sp,
+                                        color = if (isSelected) ButtonBlue else TextPrimary
                                     )
-                                },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = ZentrixCyan,
-                                    selectedLabelColor = ConsoleBackground,
-                                    containerColor = ConsoleSurfaceVariant,
-                                    labelColor = TextPrimary
-                                )
-                            )
+                                }
+                            }
                         }
                     }
                 }
@@ -186,26 +163,19 @@ fun DatabaseView(
 
         if (filteredDocs.isEmpty()) {
             item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(40.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.Storage, contentDescription = null, tint = TextMuted, modifier = Modifier.size(40.dp))
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Collection '$currentCollection' is empty (Zero demo data).",
-                            color = TextPrimary,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp
-                        )
-                        Text(
-                            text = "Tap 'Add Document' to store your real tournament, user, or app record.",
-                            color = TextMuted,
-                            fontSize = 11.sp
-                        )
+                ConsoleCard {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(30.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(Icons.Default.Storage, contentDescription = null, tint = TextMuted, modifier = Modifier.size(44.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text("Collection is empty", fontWeight = FontWeight.Bold, color = TextPrimary)
+                            Text("Click 'Add document' above to create records.", color = TextMuted, fontSize = 12.sp)
+                        }
                     }
                 }
             }
@@ -221,65 +191,60 @@ fun DatabaseView(
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = doc.title,
-                            style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
                             color = TextPrimary
                         )
                         Text(
-                            text = "ID: ${doc.id}",
+                            text = "Path: /${doc.collectionName}/${doc.id}",
                             fontFamily = FontFamily.Monospace,
                             fontSize = 11.sp,
-                            color = ZentrixCyan
+                            color = ButtonBlue
                         )
                     }
 
-                    Row {
-                        IconButton(
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        // Black Button: Copy JSON
+                        Button(
                             onClick = {
                                 copyToClipboard(context, doc.title, doc.dataJson) {
-                                    onShowToast("Document JSON copied to clipboard")
+                                    onShowToast("JSON copied")
                                 }
                             },
-                            modifier = Modifier.size(32.dp)
+                            colors = ButtonDefaults.buttonColors(containerColor = ButtonBlack),
+                            shape = RoundedCornerShape(6.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.ContentCopy,
-                                contentDescription = "Copy JSON",
-                                tint = ZentrixCyan,
-                                modifier = Modifier.size(16.dp)
-                            )
+                            Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(12.dp), tint = Color.White)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Copy", fontSize = 10.sp)
                         }
 
+                        // Red Button: Delete
                         IconButton(
                             onClick = { docToDelete = doc },
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier.size(30.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = "Delete Doc",
-                                tint = ZentrixRed.copy(alpha = 0.8f),
-                                modifier = Modifier.size(16.dp)
-                            )
+                            Icon(Icons.Default.Delete, contentDescription = null, tint = ButtonRed, modifier = Modifier.size(16.dp))
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-                // JSON Body Box
+                // JSON Fields Body Box
                 Surface(
                     color = CodeBackground,
-                    shape = RoundedCornerShape(8.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, ConsoleCardBorder),
+                    shape = RoundedCornerShape(6.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
                         text = doc.dataJson,
                         fontFamily = FontFamily.Monospace,
                         fontSize = 11.sp,
-                        color = TextPrimary,
+                        color = CodeText,
                         lineHeight = 16.sp,
-                        modifier = Modifier.padding(12.dp)
+                        modifier = Modifier.padding(10.dp)
                     )
                 }
             }
@@ -290,32 +255,22 @@ fun DatabaseView(
         val d = docToDelete!!
         AlertDialog(
             onDismissRequest = { docToDelete = null },
-            containerColor = ConsoleSurface,
-            title = {
-                Text("Delete Database Document?", color = TextPrimary, fontWeight = FontWeight.Bold)
-            },
-            text = {
-                Text(
-                    text = "Permanently remove '${d.title}' (${d.id}) from collection '${d.collectionName}'?",
-                    color = TextSecondary,
-                    fontSize = 13.sp
-                )
-            },
+            containerColor = FirebaseSurface,
+            title = { Text("Delete Document?", color = TextPrimary, fontWeight = FontWeight.Bold) },
+            text = { Text("Delete document '${d.title}' permanently from Firestore?", color = TextSecondary) },
             confirmButton = {
                 Button(
                     onClick = {
                         onDeleteDocument(d)
                         docToDelete = null
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = ZentrixRed)
+                    colors = ButtonDefaults.buttonColors(containerColor = ButtonRed)
                 ) {
                     Text("Delete")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { docToDelete = null }) {
-                    Text("Cancel", color = TextSecondary)
-                }
+                TextButton(onClick = { docToDelete = null }) { Text("Cancel") }
             }
         )
     }

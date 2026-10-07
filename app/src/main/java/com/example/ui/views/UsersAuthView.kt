@@ -44,546 +44,475 @@ fun UsersAuthView(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    var selectedFilter by remember { mutableStateOf("ALL") }
+    var selectedAuthTab by remember { mutableStateOf("Users") } // "Users" or "Sign-in method" (from video 0:44-1:00)
     var searchQuery by remember { mutableStateOf("") }
     var userToDelete by remember { mutableStateOf<AuthUserEntity?>(null) }
-
-    // Multi-selection set for Bulk Actions (Bolk)
     val selectedUids = remember { mutableStateListOf<String>() }
 
-    // Filter and search
-    val filteredUsers = remember(users, selectedFilter, searchQuery) {
-        users.filter { user ->
-            val matchesFilter = when (selectedFilter) {
-                "ALL" -> true
-                "ACTIVE" -> user.status == "ACTIVE"
-                "BLOCKED" -> user.status == "BLOCKED" || user.status == "BANNED"
-                "ADMIN" -> user.role == "ADMIN"
-                "STAFF" -> user.role == "STAFF"
-                "USER" -> user.role == "USER"
-                else -> true
+    val filteredUsers = remember(users, searchQuery) {
+        val query = searchQuery.trim()
+        if (query.isBlank()) users else {
+            users.filter {
+                it.email.contains(query, ignoreCase = true) ||
+                it.phoneNumber.contains(query, ignoreCase = true) ||
+                it.displayName.contains(query, ignoreCase = true) ||
+                it.uid.contains(query, ignoreCase = true)
             }
-            val query = searchQuery.trim()
-            val matchesQuery = query.isBlank() ||
-                user.email.contains(query, ignoreCase = true) ||
-                user.phoneNumber.contains(query, ignoreCase = true) ||
-                user.displayName.contains(query, ignoreCase = true) ||
-                user.uid.contains(query, ignoreCase = true)
-
-            matchesFilter && matchesQuery
         }
     }
-
-    val adminCount = users.count { it.role == "ADMIN" }
-    val staffCount = users.count { it.role == "STAFF" }
-    val regularCount = users.count { it.role == "USER" }
-    val blockedCount = users.count { it.status == "BLOCKED" || it.status == "BANNED" }
 
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
+            .background(FirebaseBackground)
             .padding(horizontal = 16.dp),
         contentPadding = PaddingValues(top = 16.dp, bottom = 90.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        // Auth Header Card
+        // Firebase Title & Subtabs (Exact copy of video 0:45)
         item {
-            ConsoleCard(
-                borderColor = ZentrixPurple.copy(alpha = 0.5f)
-            ) {
+            Column {
+                Text(
+                    text = "Authentication",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf("Users", "Sign-in method", "Templates", "Usage", "Settings").forEach { tabName ->
+                        val isSelected = selectedAuthTab == tabName
+                        Surface(
+                            color = if (isSelected) Color(0xFFE8F0FE) else Color.Transparent,
+                            shape = RoundedCornerShape(20.dp),
+                            border = if (isSelected) androidx.compose.foundation.BorderStroke(1.dp, ButtonBlue) else null,
+                            modifier = Modifier.clickable { selectedAuthTab = tabName }
+                        ) {
+                            Text(
+                                text = tabName,
+                                fontSize = 12.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                color = if (isSelected) ButtonBlue else TextSecondary,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // TAB 1: USERS
+        if (selectedAuthTab == "Users" || selectedAuthTab != "Sign-in method") {
+            // Search Bar & Blue "Add user" button (from video 0:46)
+            item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(46.dp)
-                            .clip(CircleShape)
-                            .background(ZentrixPurple.copy(alpha = 0.2f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.SupervisorAccount,
-                            contentDescription = null,
-                            tint = ZentrixPurple,
-                            modifier = Modifier.size(26.dp)
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        placeholder = { Text("Search by email, phone, or UID", fontSize = 12.sp) },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = TextMuted) },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = FirebaseSurface,
+                            unfocusedContainerColor = FirebaseSurface,
+                            focusedBorderColor = ButtonBlue,
+                            unfocusedBorderColor = FirebaseCardBorder
                         )
+                    )
+
+                    // Blue Button: Add user (as in video)
+                    Button(
+                        onClick = onAddUserClick,
+                        colors = ButtonDefaults.buttonColors(containerColor = ButtonBlue, contentColor = Color.White),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
+                        modifier = Modifier.testTag("add_user_button")
+                    ) {
+                        Icon(Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Add user", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+
+            // Bulk Action Bar (Red Bulk Block, Green Unblock, Black Delete)
+            if (users.isNotEmpty()) {
+                item {
+                    Surface(
+                        color = FirebaseSurface,
+                        shape = RoundedCornerShape(8.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, FirebaseCardBorder),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 10.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(
+                                    checked = selectedUids.size == filteredUsers.size && filteredUsers.isNotEmpty(),
+                                    onCheckedChange = { checkAll ->
+                                        selectedUids.clear()
+                                        if (checkAll) {
+                                            selectedUids.addAll(filteredUsers.map { it.uid })
+                                        }
+                                    }
+                                )
+                                Text(
+                                    text = if (selectedUids.isEmpty()) "Select all users" else "${selectedUids.size} selected",
+                                    color = TextPrimary,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp
+                                )
+                            }
+
+                            if (selectedUids.isNotEmpty()) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    // RED Button: Bulk Block
+                                    Button(
+                                        onClick = {
+                                            onBulkBlock(selectedUids.toList())
+                                            selectedUids.clear()
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = ButtonRed),
+                                        shape = RoundedCornerShape(6.dp),
+                                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                                    ) {
+                                        Text("Block", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    }
+
+                                    // GREEN Button: Unblock
+                                    Button(
+                                        onClick = {
+                                            onBulkUnblock(selectedUids.toList())
+                                            selectedUids.clear()
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = ButtonGreen),
+                                        shape = RoundedCornerShape(6.dp),
+                                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                                    ) {
+                                        Text("Unblock", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    }
+
+                                    // BLACK Button: Delete
+                                    Button(
+                                        onClick = {
+                                            onBulkDelete(selectedUids.toList())
+                                            selectedUids.clear()
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = ButtonBlack),
+                                        shape = RoundedCornerShape(6.dp),
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                                    ) {
+                                        Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(14.dp))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // User Table / Cards (as in video 0:46)
+            if (filteredUsers.isEmpty()) {
+                item {
+                    ConsoleCard {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(30.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(Icons.Default.PeopleOutline, contentDescription = null, tint = TextMuted, modifier = Modifier.size(44.dp))
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text("No users in this project", fontWeight = FontWeight.Bold, color = TextPrimary)
+                                Text("Click 'Add user' above to create user accounts.", color = TextMuted, fontSize = 12.sp)
+                            }
+                        }
+                    }
+                }
+            }
+
+            items(filteredUsers, key = { it.uid }) { user ->
+                var showRoleMenu by remember { mutableStateOf(false) }
+                val isChecked = selectedUids.contains(user.uid)
+                val isBlocked = user.status == "BLOCKED" || user.status == "BANNED"
+
+                ConsoleCard(
+                    borderColor = if (isBlocked) ButtonRed.copy(alpha = 0.5f) else FirebaseCardBorder
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Checkbox(
+                            checked = isChecked,
+                            onCheckedChange = { checked ->
+                                if (checked) selectedUids.add(user.uid) else selectedUids.remove(user.uid)
+                            }
+                        )
+
+                        Spacer(modifier = Modifier.width(6.dp))
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = user.displayName,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp,
+                                    color = TextPrimary
+                                )
+
+                                if (isBlocked) {
+                                    StatusBadge(text = "BLOCKED", color = ButtonRed)
+                                } else {
+                                    StatusBadge(text = "ACTIVE", color = ButtonGreen)
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            // Email ID
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.clickable {
+                                    copyToClipboard(context, "Email", user.email) {
+                                        onShowToast("Email copied: ${user.email}")
+                                    }
+                                }
+                            ) {
+                                Icon(Icons.Default.Email, contentDescription = null, tint = ButtonBlue, modifier = Modifier.size(13.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(user.email, fontSize = 12.sp, color = TextPrimary)
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Icon(Icons.Default.ContentCopy, contentDescription = null, tint = TextMuted, modifier = Modifier.size(11.dp))
+                            }
+
+                            // Mobile Phone Number
+                            if (user.phoneNumber.isNotBlank()) {
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.clickable {
+                                        copyToClipboard(context, "Phone", user.phoneNumber) {
+                                            onShowToast("Mobile copied: ${user.phoneNumber}")
+                                        }
+                                    }
+                                ) {
+                                    Icon(Icons.Default.Phone, contentDescription = null, tint = ButtonGreen, modifier = Modifier.size(13.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(user.phoneNumber, fontSize = 12.sp, color = ButtonGreen, fontWeight = FontWeight.Medium, fontFamily = FontFamily.Monospace)
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Icon(Icons.Default.ContentCopy, contentDescription = null, tint = TextMuted, modifier = Modifier.size(11.dp))
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(3.dp))
+                            Text(
+                                text = "UID: ${user.uid}  •  Provider: ${user.provider.uppercase()}",
+                                fontSize = 10.sp,
+                                color = TextMuted,
+                                fontFamily = FontFamily.Monospace
+                            )
+                        }
+
+                        // Role Selector Menu
+                        Box {
+                            Surface(
+                                color = FirebaseSurfaceVariant,
+                                shape = RoundedCornerShape(6.dp),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, FirebaseCardBorder),
+                                modifier = Modifier.clickable { showRoleMenu = true }
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(user.role, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                                    Icon(Icons.Default.ArrowDropDown, contentDescription = null, modifier = Modifier.size(16.dp))
+                                }
+                            }
+
+                            DropdownMenu(
+                                expanded = showRoleMenu,
+                                onDismissRequest = { showRoleMenu = false }
+                            ) {
+                                listOf("ADMIN", "STAFF", "USER").forEach { role ->
+                                    DropdownMenuItem(
+                                        text = { Text(role) },
+                                        onClick = {
+                                            onUpdateRole(user.uid, role)
+                                            showRoleMenu = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
                     }
 
-                    Spacer(modifier = Modifier.width(12.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
+                    HorizontalDivider(color = FirebaseCardBorder)
+                    Spacer(modifier = Modifier.height(8.dp))
 
-                    Column(modifier = Modifier.weight(1f)) {
+                    // Buttons: Block (RED) / Unblock (GREEN) and Delete
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (isBlocked) {
+                            Button(
+                                onClick = { onToggleBan(user) },
+                                colors = ButtonDefaults.buttonColors(containerColor = ButtonGreen, contentColor = Color.White),
+                                shape = RoundedCornerShape(6.dp),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                            ) {
+                                Icon(Icons.Default.LockOpen, contentDescription = null, modifier = Modifier.size(13.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Unblock User", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                        } else {
+                            Button(
+                                onClick = { onToggleBan(user) },
+                                colors = ButtonDefaults.buttonColors(containerColor = ButtonRed, contentColor = Color.White),
+                                shape = RoundedCornerShape(6.dp),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                            ) {
+                                Icon(Icons.Default.Block, contentDescription = null, modifier = Modifier.size(13.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Block User", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+
+                        IconButton(
+                            onClick = { userToDelete = user },
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(Icons.Default.Delete, contentDescription = null, tint = ButtonRed, modifier = Modifier.size(16.dp))
+                        }
+                    }
+                }
+            }
+        }
+
+        // TAB 2: SIGN-IN METHOD (Exact copy of video 0:49 - 0:56)
+        if (selectedAuthTab == "Sign-in method") {
+            item {
+                ConsoleCard {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Text(
-                            text = "Authentication & User Directory",
+                            text = "Sign-in providers",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = TextPrimary
                         )
-                        Text(
-                            text = "Email ID, Mobile Phone, RBAC Permissions & Bulk Block",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = ZentrixViolet,
-                            fontSize = 12.sp
-                        )
-                    }
-                }
 
-                Spacer(modifier = Modifier.height(14.dp))
-
-                // Stats row
-                Surface(
-                    color = ConsoleSurfaceVariant,
-                    shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(12.dp),
-                        horizontalArrangement = Arrangement.SpaceAround
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("Total", color = TextMuted, fontSize = 10.sp)
-                            Text("${users.size}", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        }
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("Admins", color = ZentrixRed, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                            Text("$adminCount", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        }
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("Staff", color = ZentrixAmber, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                            Text("$staffCount", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        }
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("Blocked", color = ZentrixRed, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                            Text("$blockedCount", color = ZentrixRed, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        // Blue Button: Add new provider (like video 0:49)
+                        Button(
+                            onClick = { onShowToast("Configuring providers") },
+                            colors = ButtonDefaults.buttonColors(containerColor = ButtonBlue),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(14.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Add new provider", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                         }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(12.dp))
-                HorizontalDivider(color = ConsoleCardBorder)
-                Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
+                    HorizontalDivider(color = FirebaseCardBorder)
+                    Spacer(modifier = Modifier.height(10.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = if (activeProjectId.isNotBlank()) "App ID: $activeProjectId" else "Global Cluster Directory",
-                        color = TextSecondary,
-                        fontSize = 11.sp
+                    // Native providers list from video
+                    val providers = listOf(
+                        Triple("Email/Password", Icons.Default.Email, true),
+                        Triple("Phone (SMS OTP)", Icons.Default.Phone, true),
+                        Triple("Google", Icons.Default.AccountCircle, true),
+                        Triple("Anonymous", Icons.Default.PersonOutline, true)
                     )
 
-                    Button(
-                        onClick = onAddUserClick,
-                        colors = ButtonDefaults.buttonColors(containerColor = ZentrixPurple),
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                        modifier = Modifier.testTag("add_user_button")
-                    ) {
-                        Icon(imageVector = Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Add User", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    providers.forEach { (name, icon, isEnabled) ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(icon, contentDescription = null, tint = ButtonBlue, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(name, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = TextPrimary)
+                            }
+
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                StatusBadge(text = if (isEnabled) "ENABLED" else "DISABLED", color = if (isEnabled) ButtonGreen else TextMuted)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Icon(Icons.Default.Edit, contentDescription = null, tint = TextMuted, modifier = Modifier.size(16.dp))
+                            }
+                        }
+                        HorizontalDivider(color = FirebaseCardBorder.copy(alpha = 0.5f))
                     }
                 }
             }
-        }
 
-        // Search Bar for Mobile Number and Email ID
-        item {
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                placeholder = { Text("Search by Mobile Number, Email ID, Name, UID...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = TextSecondary) },
-                trailingIcon = {
-                    if (searchQuery.isNotBlank()) {
-                        IconButton(onClick = { searchQuery = "" }) {
-                            Icon(Icons.Default.Close, contentDescription = "Clear", tint = TextSecondary)
-                        }
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(10.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = ConsoleSurface,
-                    unfocusedContainerColor = ConsoleSurface
-                )
-            )
-        }
-
-        // Role & Status Filter Chips
-        item {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                listOf(
-                    "ALL" to "All Accounts (${users.size})",
-                    "ACTIVE" to "Active (${users.size - blockedCount})",
-                    "BLOCKED" to "Blocked ($blockedCount)",
-                    "ADMIN" to "Admins ($adminCount)",
-                    "STAFF" to "Staff ($staffCount)",
-                    "USER" to "Regular Users ($regularCount)"
-                ).forEach { (key, label) ->
-                    val isSelected = selectedFilter == key
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = { selectedFilter = key },
-                        label = { Text(label, fontSize = 11.sp, fontWeight = FontWeight.Bold) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = if (key == "BLOCKED") ZentrixRed else ZentrixPurple,
-                            selectedLabelColor = Color.White,
-                            containerColor = ConsoleSurfaceVariant,
-                            labelColor = TextSecondary
-                        )
-                    )
-                }
-            }
-        }
-
-        // Bulk Actions Bar (Bolk Block / Unblock / Delete)
-        if (users.isNotEmpty()) {
+            // SMS Multi-factor Authentication card from video (0:50)
             item {
-                Surface(
-                    color = ConsoleSurfaceVariant,
-                    shape = RoundedCornerShape(10.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, ConsoleCardBorder),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
+                ConsoleCard {
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Checkbox(
-                                checked = selectedUids.size == filteredUsers.size && filteredUsers.isNotEmpty(),
-                                onCheckedChange = { checkAll ->
-                                    selectedUids.clear()
-                                    if (checkAll) {
-                                        selectedUids.addAll(filteredUsers.map { it.uid })
-                                    }
-                                }
-                            )
-                            Text(
-                                text = if (selectedUids.isEmpty()) "Select for Bulk Action" else "${selectedUids.size} Selected",
-                                color = TextPrimary,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp
-                            )
-                        }
-
-                        if (selectedUids.isNotEmpty()) {
-                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Button(
-                                    onClick = {
-                                        onBulkBlock(selectedUids.toList())
-                                        selectedUids.clear()
-                                    },
-                                    colors = ButtonDefaults.buttonColors(containerColor = ZentrixRed),
-                                    shape = RoundedCornerShape(6.dp),
-                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
-                                ) {
-                                    Icon(Icons.Default.Block, contentDescription = null, modifier = Modifier.size(14.dp))
-                                    Spacer(modifier = Modifier.width(3.dp))
-                                    Text("Bulk Block", fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                                }
-
-                                Button(
-                                    onClick = {
-                                        onBulkUnblock(selectedUids.toList())
-                                        selectedUids.clear()
-                                    },
-                                    colors = ButtonDefaults.buttonColors(containerColor = ZentrixGreen),
-                                    shape = RoundedCornerShape(6.dp),
-                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
-                                ) {
-                                    Icon(Icons.Default.LockOpen, contentDescription = null, modifier = Modifier.size(14.dp))
-                                    Spacer(modifier = Modifier.width(3.dp))
-                                    Text("Unblock", fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                                }
-
-                                IconButton(
-                                    onClick = {
-                                        onBulkDelete(selectedUids.toList())
-                                        selectedUids.clear()
-                                    },
-                                    modifier = Modifier.size(30.dp)
-                                ) {
-                                    Icon(Icons.Default.Delete, contentDescription = "Bulk Delete", tint = ZentrixRed, modifier = Modifier.size(16.dp))
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        if (filteredUsers.isEmpty()) {
-            item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(40.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.Group, contentDescription = null, tint = TextMuted, modifier = Modifier.size(40.dp))
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text("No matching user accounts found.", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                        Text("Tap 'Add User' to register your real accounts with email and mobile number.", color = TextMuted, fontSize = 11.sp)
-                    }
-                }
-            }
-        }
-
-        items(filteredUsers, key = { it.uid }) { user ->
-            var showRoleMenu by remember { mutableStateOf(false) }
-            val isChecked = selectedUids.contains(user.uid)
-            val isBlocked = user.status == "BLOCKED" || user.status == "BANNED"
-
-            ConsoleCard(
-                borderColor = when {
-                    isBlocked -> ZentrixRed.copy(alpha = 0.6f)
-                    user.role == "ADMIN" -> ZentrixRed.copy(alpha = 0.3f)
-                    user.role == "STAFF" -> ZentrixAmber.copy(alpha = 0.3f)
-                    else -> ConsoleCardBorder
-                }
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.Top
-                ) {
-                    // Checkbox for bulk actions
-                    Checkbox(
-                        checked = isChecked,
-                        onCheckedChange = { checked ->
-                            if (checked) selectedUids.add(user.uid) else selectedUids.remove(user.uid)
-                        },
-                        modifier = Modifier.padding(end = 4.dp)
-                    )
-
-                    // Avatar Box with role initial
-                    Box(
-                        modifier = Modifier
-                            .size(42.dp)
-                            .clip(CircleShape)
-                            .background(
-                                when {
-                                    isBlocked -> ZentrixRed.copy(alpha = 0.2f)
-                                    user.role == "ADMIN" -> ZentrixRed.copy(alpha = 0.2f)
-                                    user.role == "STAFF" -> ZentrixAmber.copy(alpha = 0.2f)
-                                    else -> ZentrixCyan.copy(alpha = 0.2f)
-                                }
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = user.displayName.take(1).uppercase(),
-                            color = when {
-                                isBlocked -> ZentrixRed
-                                user.role == "ADMIN" -> ZentrixRed
-                                user.role == "STAFF" -> ZentrixAmber
-                                else -> ZentrixCyan
-                            },
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(10.dp))
-
-                    Column(modifier = Modifier.weight(1f)) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier.fillMaxWidth()
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFE8F0FE)),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                text = user.displayName,
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = TextPrimary
-                            )
-
-                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                if (isBlocked) {
-                                    StatusBadge(text = "BLOCKED", color = ZentrixRed)
-                                } else {
-                                    StatusBadge(text = "ACTIVE", color = ZentrixGreen)
-                                }
-                            }
+                            Icon(Icons.Default.Security, contentDescription = null, tint = ButtonBlue, modifier = Modifier.size(20.dp))
                         }
 
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.width(10.dp))
 
-                        // Email ID Row with copy button
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.clickable {
-                                copyToClipboard(context, "User Email", user.email) {
-                                    onShowToast("Email copied: ${user.email}")
-                                }
-                            }
-                        ) {
-                            Icon(Icons.Default.Email, contentDescription = null, tint = ZentrixCyan, modifier = Modifier.size(13.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = user.email,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = TextPrimary,
-                                fontSize = 12.sp
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Icon(Icons.Default.ContentCopy, contentDescription = "Copy Email", tint = TextMuted, modifier = Modifier.size(11.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("SMS Multi-factor authentication", fontWeight = FontWeight.Bold, color = TextPrimary, fontSize = 13.sp)
+                            Text("Allow users to add an extra layer of security to their account.", color = TextSecondary, fontSize = 11.sp)
                         }
 
-                        Spacer(modifier = Modifier.height(2.dp))
-
-                        // Mobile Number Row with copy button
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.clickable {
-                                if (user.phoneNumber.isNotBlank()) {
-                                    copyToClipboard(context, "User Phone", user.phoneNumber) {
-                                        onShowToast("Mobile copied: ${user.phoneNumber}")
-                                    }
-                                }
-                            }
-                        ) {
-                            Icon(Icons.Default.Phone, contentDescription = null, tint = ZentrixGreen, modifier = Modifier.size(13.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = if (user.phoneNumber.isNotBlank()) user.phoneNumber else "No mobile added",
-                                fontFamily = FontFamily.Monospace,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = if (user.phoneNumber.isNotBlank()) ZentrixGreen else TextMuted,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-                            if (user.phoneNumber.isNotBlank()) {
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Icon(Icons.Default.ContentCopy, contentDescription = "Copy Phone", tint = TextMuted, modifier = Modifier.size(11.dp))
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(3.dp))
-                        Text(
-                            text = "UID: ${user.uid} • Provider: ${user.provider.uppercase()}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = TextMuted,
-                            fontSize = 10.sp
-                        )
-                    }
-
-                    // Role Chip with Dropdown
-                    Box {
-                        Surface(
-                            color = when (user.role) {
-                                "ADMIN" -> ZentrixRed.copy(alpha = 0.15f)
-                                "STAFF" -> ZentrixAmber.copy(alpha = 0.15f)
-                                else -> ZentrixCyan.copy(alpha = 0.15f)
-                            },
+                        Button(
+                            onClick = { onShowToast("SMS MFA activated") },
+                            colors = ButtonDefaults.buttonColors(containerColor = ButtonBlue),
                             shape = RoundedCornerShape(8.dp),
-                            border = androidx.compose.foundation.BorderStroke(
-                                1.dp,
-                                when (user.role) {
-                                    "ADMIN" -> ZentrixRed
-                                    "STAFF" -> ZentrixAmber
-                                    else -> ZentrixCyan
-                                }
-                            ),
-                            onClick = { showRoleMenu = true }
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
                         ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = user.role,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = when (user.role) {
-                                        "ADMIN" -> ZentrixRed
-                                        "STAFF" -> ZentrixAmber
-                                        else -> ZentrixCyan
-                                    }
-                                )
-                                Icon(
-                                    imageVector = Icons.Default.ArrowDropDown,
-                                    contentDescription = "Change role",
-                                    tint = TextSecondary,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
+                            Text("Upgrade", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                         }
-
-                        DropdownMenu(
-                            expanded = showRoleMenu,
-                            onDismissRequest = { showRoleMenu = false }
-                        ) {
-                            listOf("ADMIN", "STAFF", "USER").forEach { r ->
-                                DropdownMenuItem(
-                                    text = { Text(r, fontWeight = if (user.role == r) FontWeight.Bold else FontWeight.Normal) },
-                                    onClick = {
-                                        onUpdateRole(user.uid, r)
-                                        showRoleMenu = false
-                                    }
-                                )
-                            }
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-                HorizontalDivider(color = ConsoleCardBorder.copy(alpha = 0.5f))
-                Spacer(modifier = Modifier.height(6.dp))
-
-                // Action Bar: Instant Block / Unblock & Delete
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    FilledTonalButton(
-                        onClick = { onToggleBan(user) },
-                        colors = ButtonDefaults.filledTonalButtonColors(
-                            containerColor = if (isBlocked) ZentrixGreen.copy(alpha = 0.2f) else ZentrixRed.copy(alpha = 0.2f),
-                            contentColor = if (isBlocked) ZentrixGreen else ZentrixRed
-                        ),
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
-                    ) {
-                        Icon(
-                            imageVector = if (isBlocked) Icons.Default.LockOpen else Icons.Default.Block,
-                            contentDescription = null,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(5.dp))
-                        Text(
-                            text = if (isBlocked) "Unblock User" else "Block User",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-
-                    IconButton(
-                        onClick = { userToDelete = user },
-                        modifier = Modifier.size(30.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = "Delete user",
-                            tint = ZentrixRed.copy(alpha = 0.7f),
-                            modifier = Modifier.size(16.dp)
-                        )
                     }
                 }
             }
@@ -594,32 +523,22 @@ fun UsersAuthView(
         val u = userToDelete!!
         AlertDialog(
             onDismissRequest = { userToDelete = null },
-            containerColor = ConsoleSurface,
-            title = {
-                Text("Delete User Account?", color = TextPrimary, fontWeight = FontWeight.Bold)
-            },
-            text = {
-                Text(
-                    text = "Permanently remove account '${u.displayName}' (${u.email})? They will lose access to the application immediately.",
-                    color = TextSecondary,
-                    fontSize = 13.sp
-                )
-            },
+            containerColor = FirebaseSurface,
+            title = { Text("Delete User Account?", color = TextPrimary, fontWeight = FontWeight.Bold) },
+            text = { Text("Permanently remove '${u.displayName}' (${u.email})?", color = TextSecondary) },
             confirmButton = {
                 Button(
                     onClick = {
                         onDeleteUser(u)
                         userToDelete = null
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = ZentrixRed)
+                    colors = ButtonDefaults.buttonColors(containerColor = ButtonRed)
                 ) {
                     Text("Delete")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { userToDelete = null }) {
-                    Text("Cancel", color = TextSecondary)
-                }
+                TextButton(onClick = { userToDelete = null }) { Text("Cancel") }
             }
         )
     }

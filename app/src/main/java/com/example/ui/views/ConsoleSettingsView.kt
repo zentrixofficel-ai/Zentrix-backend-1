@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ui.components.CodeBlockView
 import com.example.ui.components.ConsoleCard
 import com.example.ui.components.StatusBadge
 import com.example.ui.components.copyToClipboard
@@ -106,6 +107,80 @@ fun ConsoleSettingsView(
                     SettingDetailRow(label = "Local Storage Engine", value = "Android Room SQLite (Encrypted)")
                     SettingDetailRow(label = "Vault Cipher", value = "AES-256-GCM Zero-Trust")
                 }
+            }
+        }
+
+        // Section: GitHub Actions Workflows (Requested by User)
+        item {
+            Text(
+                text = "GitHub CI/CD Workflows",
+                style = MaterialTheme.typography.titleSmall,
+                color = TextPrimary,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        item {
+            val workflowCode = """
+# .github/workflows/build-android-app.yml
+name: Android App Build & Release
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+      - run: chmod +x gradlew || true
+      - name: Build Android APK
+        run: ./gradlew assembleDebug || gradle assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zentrix-apk
+          path: app/build/outputs/apk/debug/*.apk
+""".trimIndent()
+
+            ConsoleCard {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "GitHub Actions Workflow (.github/workflows)",
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary,
+                            fontSize = 14.sp
+                        )
+                        Text(
+                            text = "CI/CD pipeline for building APKs, running tests, and publishing releases automatically.",
+                            color = TextSecondary,
+                            fontSize = 11.sp
+                        )
+                    }
+                    StatusBadge(text = "CI / CD", color = ButtonBlue)
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                CodeBlockView(
+                    code = workflowCode,
+                    title = "build-android-app.yml",
+                    onCopy = {
+                        copyToClipboard(context, "GitHub Workflow", workflowCode) {
+                            onShowToast("GitHub Actions Workflow copied to clipboard!")
+                        }
+                    }
+                )
             }
         }
 
